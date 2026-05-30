@@ -1,0 +1,37 @@
+<header class="navbar navbar-expand-lg navbar-luxury fixed-top shadow-sm">
+  <div class="container">
+    <a class="navbar-brand brand-mark" data-route="index.html" href="index.html">NOVA HOTEL</a>
+    <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#novaNavbar" aria-controls="novaNavbar" aria-expanded="false" aria-label="Mở menu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <nav class="collapse navbar-collapse" id="novaNavbar">
+      <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
+        <li class="nav-item"><a class="nav-link" data-nav="home" data-route="index.html" href="index.html">Trang chủ</a></li>
+        <li class="nav-item"><a class="nav-link" data-nav="rooms" data-route="rooms/rooms.html" href="rooms/rooms.html">Phòng</a></li>
+        <li class="nav-item"><a class="nav-link" data-nav="bookings" data-auth-required data-route="user/my-bookings.html" href="user/my-bookings.html">Đặt của tôi</a></li>
+        <li class="nav-item"><a class="nav-link" data-nav="profile" data-auth-required data-route="user/profile.html" href="user/profile.html">Hồ sơ</a></li>
+        <li class="nav-item"><a class="nav-link" data-nav="admin" data-role="admin" data-route="admin/dashboard.html" href="admin/dashboard.html">Admin</a></li>
+      </ul>
+      <div class="ms-lg-3 d-flex gap-2 mt-3 mt-lg-0 align-items-lg-center">
+        <!-- Khối người dùng đã đăng nhập - luôn rõ ràng -->
+        <div class="d-none align-items-center gap-2" data-auth-user>
+          <div class="text-end">
+            <div class="fw-semibold" data-user-name style="font-size:0.92rem; color:#1a1a1a;">Người dùng</div>
+            <span class="badge rounded-pill px-2 py-0" data-user-role 
+                  style="font-size:0.65rem; background:#e5e5e5; color:#333; font-weight:600;">Customer</span>
+          </div>
+          <button class="btn-luxury btn-sm" data-logout type="button" 
+                  style="font-size:0.8rem; padding:6px 14px; border-radius:999px;">
+            Đăng xuất
+          </button>
+        </div>
+
+        <!-- Khối đăng nhập / đăng ký - luôn nổi bật -->
+        <div data-auth-login class="d-flex gap-2 align-items-center">
+          <a class="btn-luxury btn-luxury-outline btn-sm" data-route="login.html" href="login.html">Đăng nhập</a>
+          <a class="btn-luxury btn-luxury-primary btn-sm" data-route="register.html" href="register.html">Đăng ký</a>
+        </div>
+      </div>
+    </nav>
+  </div>
+</header>

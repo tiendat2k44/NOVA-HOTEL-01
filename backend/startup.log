@@ -1,0 +1,41 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.0.6)
+
+2026-05-30T20:42:09.563+07:00  INFO 1828 --- [nova-hotel-backend] [           main] c.novahotel.NovaHotelBackendApplication  : Starting NovaHotelBackendApplication v0.0.1-SNAPSHOT using Java 21.0.6 with PID 1828 (E:\Đồ Án ĐTĐ\NOVAHOTEL\backend\target\nova-hotel-backend-0.0.1-SNAPSHOT.jar started by THISPC in E:\Đồ Án ĐTĐ\NOVAHOTEL\backend)
+2026-05-30T20:42:09.567+07:00 DEBUG 1828 --- [nova-hotel-backend] [           main] c.novahotel.NovaHotelBackendApplication  : Running with Spring Boot v4.0.6, Spring v7.0.7
+2026-05-30T20:42:09.568+07:00  INFO 1828 --- [nova-hotel-backend] [           main] c.novahotel.NovaHotelBackendApplication  : No active profile set, falling back to 1 default profile: "default"
+2026-05-30T20:42:10.361+07:00  INFO 1828 --- [nova-hotel-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data MongoDB repositories in DEFAULT mode.
+2026-05-30T20:42:10.420+07:00  INFO 1828 --- [nova-hotel-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 53 ms. Found 4 MongoDB repository interfaces.
+2026-05-30T20:42:10.919+07:00  INFO 1828 --- [nova-hotel-backend] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8080 (http)
+2026-05-30T20:42:10.934+07:00  INFO 1828 --- [nova-hotel-backend] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-05-30T20:42:10.934+07:00  INFO 1828 --- [nova-hotel-backend] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.21]
+2026-05-30T20:42:10.960+07:00  INFO 1828 --- [nova-hotel-backend] [           main] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 1337 ms
+2026-05-30T20:42:11.025+07:00 DEBUG 1828 --- [nova-hotel-backend] [           main] com.novahotel.security.JwtFilter         : Filter 'jwtFilter' configured for use
+2026-05-30T20:42:11.226+07:00  INFO 1828 --- [nova-hotel-backend] [           main] org.mongodb.driver.client                : MongoClient with metadata {"driver": {"name": "mongo-java-driver|spring-boot|sync", "version": "5.6.5"}, "os": {"type": "Windows", "name": "Windows 11", "architecture": "amd64", "version": "10.0"}, "platform": "Java/Eclipse Adoptium/21.0.6+7-LTS"} created with settings MongoClientSettings{readPreference=primary, writeConcern=WriteConcern{w=null, wTimeout=null ms, journal=null}, retryWrites=true, retryReads=true, readConcern=ReadConcern{level=null}, credential=null, transportSettings=null, commandListeners=[], codecRegistry=ProvidersCodecRegistry{codecProviders=[ValueCodecProvider{}, BsonValueCodecProvider{}, DBRefCodecProvider{}, DBObjectCodecProvider{}, DocumentCodecProvider{}, CollectionCodecProvider{}, IterableCodecProvider{}, MapCodecProvider{}, GeoJsonCodecProvider{}, GridFSFileCodecProvider{}, Jsr310CodecProvider{}, JsonObjectCodecProvider{}, BsonCodecProvider{}, com.mongodb.client.model.mql.ExpressionCodecProvider@310b2b6f, com.mongodb.Jep395RecordCodecProvider@6909f6be, com.mongodb.KotlinCodecProvider@6b5ab2f2, EnumCodecProvider{}]}, loggerSettings=LoggerSettings{maxDocumentLength=1000}, clusterSettings={hosts=[localhost:27017], srvServiceName=mongodb, mode=SINGLE, requiredClusterType=UNKNOWN, requiredReplicaSetName='null', serverSelector='null', clusterListeners='[]', serverSelectionTimeout='30000 ms', localThreshold='15 ms'}, socketSettings=SocketSettings{connectTimeoutMS=10000, readTimeoutMS=0, receiveBufferSize=0, proxySettings=ProxySettings{host=null, port=null, username=null, password=null}}, heartbeatSocketSettings=SocketSettings{connectTimeoutMS=10000, readTimeoutMS=10000, receiveBufferSize=0, proxySettings=ProxySettings{host=null, port=null, username=null, password=null}}, connectionPoolSettings=ConnectionPoolSettings{maxSize=100, minSize=0, maxWaitTimeMS=120000, maxConnectionLifeTimeMS=0, maxConnectionIdleTimeMS=0, maintenanceInitialDelayMS=0, maintenanceFrequencyMS=60000, connectionPoolListeners=[], maxConnecting=2}, serverSettings=ServerSettings{heartbeatFrequencyMS=10000, minHeartbeatFrequencyMS=500, serverMonitoringMode=AUTO, serverListeners='[]', serverMonitorListeners='[]'}, sslSettings=SslSettings{enabled=false, invalidHostNameAllowed=false, context=null}, applicationName='null', compressorList=[], uuidRepresentation=UNSPECIFIED, serverApi=null, autoEncryptionSettings=null, dnsClient=null, inetAddressResolver=null, contextProvider=null, timeoutMS=null}
+2026-05-30T20:42:11.249+07:00  INFO 1828 --- [nova-hotel-backend] [localhost:27017] org.mongodb.driver.cluster               : Monitor thread successfully connected to server with description ServerDescription{address=localhost:27017, type=STANDALONE, cryptd=false, state=CONNECTED, ok=true, minWireVersion=0, maxWireVersion=27, maxDocumentSize=16777216, logicalSessionTimeoutMinutes=30, roundTripTimeNanos=19864000, minRoundTripTimeNanos=0}
+2026-05-30T20:42:11.654+07:00  INFO 1828 --- [nova-hotel-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name customUserDetailsService
+2026-05-30T20:42:12.318+07:00  WARN 1828 --- [nova-hotel-backend] [           main] ConfigServletWebServerApplicationContext : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.context.ApplicationContextException: Failed to start bean 'webServerStartStop'
+2026-05-30T20:42:12.332+07:00  INFO 1828 --- [nova-hotel-backend] [           main] .s.b.a.l.ConditionEvaluationReportLogger : 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-05-30T20:42:12.347+07:00 ERROR 1828 --- [nova-hotel-backend] [           main] o.s.b.d.LoggingFailureAnalysisReporter   : 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Web server failed to start. Port 8080 was already in use.
+
+Action:
+
+Identify and stop the process that's listening on port 8080 or configure this application to listen on another port.
+

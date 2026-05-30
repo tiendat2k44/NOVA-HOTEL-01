@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đăng nhập | NOVA HOTEL</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <div data-component="header"></div>
+
+  <main>
+    <section class="page-hero">
+      <div class="container">
+        <div class="row align-items-center g-5">
+          <div class="col-lg-6" data-reveal>
+            <span class="kicker text-white">Tài khoản</span>
+            <h1 class="section-title mt-3">Đăng nhập vào hệ thống NOVA HOTEL</h1>
+            <p class="section-subtitle ms-0">Sử dụng tài khoản khách hàng hoặc admin để tiếp tục quản lý đặt phòng, tra cứu lịch sử và vận hành hệ thống.</p>
+            <div class="row g-3 mt-4">
+              <div class="col-md-4">
+                <div class="mini-stat h-100">
+                  <div class="room-chip mb-3">JWT</div>
+                  <div class="fw-semibold">Authentication</div>
+                  <small class="text-muted-soft">Sẵn sàng cho token-based login.</small>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="mini-stat h-100">
+                  <div class="room-chip mb-3">API</div>
+                  <div class="fw-semibold">Fetch API</div>
+                  <small class="text-muted-soft">Kết nối REST Spring Boot linh hoạt.</small>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="mini-stat h-100">
+                  <div class="room-chip mb-3">DB</div>
+                  <div class="fw-semibold">MongoDB</div>
+                  <small class="text-muted-soft">Dữ liệu sẵn sàng đồng bộ backend.</small>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-6" data-reveal>
+            <div class="auth-card p-4 p-md-5">
+              <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                  <div class="room-chip mb-2">Login</div>
+                  <h2 class="h3 mb-0">Chào mừng trở lại</h2>
+                </div>
+                <a class="btn-luxury btn-luxury-outline btn-sm" href="register.html">Tạo tài khoản</a>
+              </div>
+              <form class="form-luxury" id="loginForm" data-login-form>
+                <div class="mb-3">
+                  <label class="form-label text-dark">Vai trò demo</label>
+                  <select class="form-select" name="role">
+                    <option value="customer">Khách hàng</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label text-dark">Email</label>
+                  <input class="form-control" type="email" name="email" placeholder="you@example.com" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label text-dark">Mật khẩu</label>
+                  <input class="form-control" type="password" name="password" placeholder="••••••••" required>
+                </div>
+                <div class="d-flex flex-wrap gap-2 mb-4">
+                  <button class="btn-luxury btn-luxury-outline btn-sm" type="button" data-fill-demo="#loginForm" data-email="customer@novahotel.vn" data-password="123456" data-role="customer">Dùng demo khách</button>
+                  <button class="btn-luxury btn-luxury-outline btn-sm" type="button" data-fill-demo="#loginForm" data-email="admin@novahotel.vn" data-password="123456" data-role="admin">Dùng demo admin</button>
+                </div>
+                <button class="btn-luxury btn-luxury-primary w-100" type="submit">Đăng nhập</button>
+              </form>
+              <div class="content-banner light mt-4 p-4">
+                <small class="text-muted-soft d-block mb-2">Gợi ý kết nối backend</small>
+                <p class="mb-0">Form này gọi <strong>/api/auth/login</strong>. Nếu API chưa chạy, frontend sẽ tự tạo phiên demo trên trình duyệt để bạn vẫn có thể thuyết trình toàn bộ luồng đăng nhập.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div data-component="footer"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/js/main.js"></script>
+  <script src="assets/js/auth.js"></script>
+</body>
+</html>

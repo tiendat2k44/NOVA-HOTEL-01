@@ -1,0 +1,12 @@
+[
+  {"reviewId":"RV001","userId":"USR003","roomId":"RM003","rating":5,"comment":"Phòng Deluxe rất đẹp, sạch sẽ, view ban công cực kỳ ấn tượng. Nhân viên lễ tân nhiệt tình. Sẽ quay lại lần sau!","createdAt":{"$date":"2026-04-14T10:25:00.000Z"}},
+  {"reviewId":"RV002","userId":"USR004","roomId":"RM005","rating":5,"comment":"Suite honeymoon hoàn hảo cho tuần trăng mật. Bồn tắm view núi, dịch vụ phòng nhanh, trang trí lãng mạn. Cảm ơn Nova Hotel!","createdAt":{"$date":"2026-04-22T09:40:00.000Z"}},
+  {"reviewId":"RV003","userId":"USR005","roomId":"RM001","rating":4,"comment":"Phòng Standard ổn, giá hợp lý, view núi đẹp. Nước nóng hơi yếu vào buổi sáng nhưng tổng thể hài lòng.","createdAt":{"$date":"2026-04-08T18:15:00.000Z"}},
+  {"reviewId":"RV004","userId":"USR006","roomId":"RM004","rating":5,"comment":"Đi gia đình 4 người, phòng Family rộng rãi, 2 giường thoải mái. Trẻ con rất thích. Bữa sáng ngon và đa dạng.","createdAt":{"$date":"2026-04-19T07:50:00.000Z"}},
+  {"reviewId":"RV005","userId":"USR007","roomId":"RM008","rating":4,"comment":"View sông rất chill, phòng sạch. Giá hơi cao so với mùa thấp điểm nhưng đáng tiền vì không gian yên tĩnh.","createdAt":{"$date":"2026-04-20T21:30:00.000Z"}},
+  {"reviewId":"RV006","userId":"USR003","roomId":"RM003","rating":4,"comment":"Lần thứ 2 quay lại, vẫn tốt như lần trước. Lễ tân nhớ tên khách cũ rất chuyên nghiệp.","createdAt":{"$date":"2026-04-13T11:05:00.000Z"}},
+  {"reviewId":"RV007","userId":"USR005","roomId":"RM005","rating":5,"comment":"Suite cực kỳ sang trọng, không gian riêng tư tốt. Phù hợp công tác hoặc nghỉ dưỡng cao cấp.","createdAt":{"$date":"2026-03-24T16:20:00.000Z"}},
+  {"reviewId":"RV008","userId":"USR004","roomId":"RM011","rating":3,"comment":"Phòng Twin ổn, nhưng tiếng ồn từ hành lang hơi lớn. Cần cải thiện cách âm.","createdAt":{"$date":"2026-04-30T08:45:00.000Z"}},
+  {"reviewId":"RV009","userId":"USR006","roomId":"RM009","rating":5,"comment":"Family Suite quá đỉnh cho gia đình có con nhỏ. Rất nhiều tiện ích và không gian chơi đùa cho trẻ.","createdAt":{"$date":"2026-05-06T19:10:00.000Z"}},
+  {"reviewId":"RV010","userId":"USR007","roomId":"RM012","rating":4,"comment":"Suite Executive rất tiện cho họp hành. Có máy chiếu và bàn họp nhỏ. Dịch vụ chuyên nghiệp.","createdAt":{"$date":"2026-05-12T14:55:00.000Z"}}
+]

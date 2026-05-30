@@ -1,0 +1,16 @@
+{
+  "name": "novahotel-database",
+  "version": "1.0.0",
+  "description": "MongoDB database initialization and sample data for NOVA HOTEL project",
+  "scripts": {
+    "import": "node import-data.js",
+    "import:local": "MONGODB_URI=mongodb://localhost:27017/nova_hotel_db node import-data.js"
+  },
+  "dependencies": {
+    "mongodb": "^6.5.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,20 @@
+{
+    "java.compile.nullAnalysis.mode": "automatic",
+    "files.readonlyInclude": {
+        "{**/.c4z/.extsrcs/*.PROTSYM.cbl,**/.c4z/.extsrcs/*.PROTSYM.listing}": true
+    },
+
+    // Cấu hình Live Server: Tự động serve từ thư mục frontend
+    // → Bấm Go Live sẽ hoạt động ngay khi mở thư mục gốc
+    "liveServer.settings.root": "/frontend",
+    "liveServer.settings.port": 5500,
+    "liveServer.settings.host": "localhost",
+    "liveServer.settings.open": true,
+    "liveServer.settings.ignoreFiles": [
+        ".vscode/**",
+        "**/*.md",
+        "**/backend/**",
+        "**/database/**",
+        "**/Image/**"
+    ]
+}

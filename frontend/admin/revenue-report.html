@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bao cao doanh thu | NOVA HOTEL Admin</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <div data-component="header"></div>
+
+  <main class="section-pad pt-5 dashboard-shell">
+    <div class="container-fluid px-4">
+      <div class="row g-4">
+        <aside class="col-lg-3 dashboard-aside" data-reveal>
+          <div class="panel-card sidebar-admin rounded-4 p-4 h-100">
+            <div class="brand-mark text-white mb-4">NOVA HOTEL</div>
+            <div class="small text-uppercase mb-3" style="letter-spacing:0.18em;">Admin menu</div>
+            <nav class="nav flex-column">
+              <a class="nav-link" href="dashboard.html"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a>
+              <a class="nav-link" href="manage-rooms.html"><i class="bi bi-door-open me-2"></i>Quan ly phong</a>
+              <a class="nav-link" href="manage-bookings.html"><i class="bi bi-calendar2-check me-2"></i>Quan ly dat phong</a>
+              <a class="nav-link" href="manage-users.html"><i class="bi bi-people me-2"></i>Quan ly nguoi dung</a>
+              <a class="nav-link active" href="revenue-report.html"><i class="bi bi-graph-up-arrow me-2"></i>Doanh thu</a>
+            </nav>
+          </div>
+        </aside>
+        <section class="col-lg-9" data-admin-revenue data-reveal>
+          <div class="dashboard-hero mb-4">
+            <div class="dashboard-topline mb-0">
+              <div>
+                <span class="kicker text-white">Bao cao</span>
+                <h1 class="section-title mt-3 mb-2">Module doanh thu</h1>
+                <p class="section-subtitle ms-0 mb-0">Bao cao chi tiet doanh thu theo thang, phong va trang thai booking.</p>
+              </div>
+              <div class="badge-luxury bg-white text-dark">Revenue Center</div>
+            </div>
+          </div>
+
+          <div class="row g-4 mb-4" data-revenue-summary></div>
+
+          <div class="row g-4">
+            <div class="col-lg-7">
+              <div class="dashboard-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                  <div>
+                    <span class="kicker">Revenue trend</span>
+                    <h2 class="h4 mt-2 mb-0">Doanh thu theo thang</h2>
+                  </div>
+                  <span class="badge-soft" data-revenue-period>6 thang gan nhat</span>
+                </div>
+                <div class="dashboard-figure">
+                  <div class="d-grid gap-3" data-revenue-monthly></div>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-5">
+              <div class="dashboard-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                  <div>
+                    <span class="kicker">Top rooms</span>
+                    <h2 class="h4 mt-2 mb-0">Phong doanh thu cao</h2>
+                  </div>
+                  <i class="bi bi-award text-gold fs-3"></i>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-sm align-middle table-luxury mb-0">
+                    <thead>
+                      <tr>
+                        <th>Phong</th>
+                        <th>Luong booking</th>
+                        <th>Doanh thu</th>
+                      </tr>
+                    </thead>
+                    <tbody data-revenue-top-rooms></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-4 mt-1">
+            <div class="col-lg-6">
+              <div class="dashboard-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                  <div>
+                    <span class="kicker">Trang thai</span>
+                    <h2 class="h4 mt-2 mb-0">Phan bo doanh thu</h2>
+                  </div>
+                  <i class="bi bi-pie-chart text-gold fs-3"></i>
+                </div>
+                <div class="d-grid gap-3" data-revenue-status></div>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <div class="dashboard-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                  <div>
+                    <span class="kicker">Giao dich moi</span>
+                    <h2 class="h4 mt-2 mb-0">Booking gan day</h2>
+                  </div>
+                  <i class="bi bi-clock-history text-gold fs-3"></i>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-sm align-middle table-luxury mb-0">
+                    <thead>
+                      <tr>
+                        <th>Ma</th>
+                        <th>Khach</th>
+                        <th>Ngay</th>
+                        <th>Tien</th>
+                      </tr>
+                    </thead>
+                    <tbody data-revenue-recent></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <div data-component="footer"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../assets/js/main.js"></script>
+  <script src="../assets/js/admin.js"></script>
+</body>
+</html>
