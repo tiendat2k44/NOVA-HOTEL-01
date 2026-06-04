@@ -1,4 +1,6 @@
-// Cấu hình API gốc của Spring Boot. Nếu backend chạy ở host/port khác, chỉ cần sửa biến này.
+// Cấu hình API gốc của Spring Boot.
+// Mặc định dùng localhost. Nếu bạn mở frontend bằng 127.0.0.1 thì vẫn hoạt động nhờ CORS đã cấu hình cả 2.
+// Nếu backend chạy khác port/host → chỉ cần sửa dòng dưới.
 const NOVA_HOTEL_API_BASE = 'http://localhost:8080/api';
 
 // Tên key dùng chung để lưu trạng thái đăng nhập trên trình duyệt.
@@ -9,11 +11,20 @@ const NOVA_STORAGE_KEYS = {
 
 const getAssetPrefix = () => {
   const path = window.location.pathname;
-  // Hỗ trợ tốt hơn khi chạy từ Live Server hoặc http-server ở thư mục frontend
-  if (path.includes('/rooms/') || path.includes('/user/') || path.includes('/admin/')) {
+  
+  // TRƯỚC TIÊN: Kiểm tra nếu đang trong thư mục con (rooms/, user/, admin/)
+  if (path.match(/\/(rooms|user|admin)\//)) {
     return '../';
   }
-  // Nếu đang ở root của frontend (http://localhost:5500/ hoặc /index.html)
+  
+  // SAU ĐÓ: Kiểm tra nếu pathname bắt đầu bằng /frontend/
+  // (server serve từ root, không serve từ folder frontend/)
+  if (path.startsWith('/frontend/')) {
+    return '/frontend/';
+  }
+  
+  // MẶC ĐỊNH: Server serve từ thư mục frontend/
+  // → pathname là /index.html, /login.html, etc. → không cần prefix
   return '';
 };
 
@@ -362,7 +373,7 @@ const resolveLinkedPaths = () => {
     }
   });
 };
-
+ 
 const initLayout = async () => {
   enforceAccess();
   const root = getAssetPrefix();

@@ -1,8 +1,13 @@
 /**
- * QUICK START - Nova Hotel Frontend Refactor
- * ==========================================
+ * QUICK START - Nova Hotel Frontend Refactor (LỖI THỜI)
+ * =====================================================
  * 
- * Hướng dẫn nhanh cho developers
+ * ⚠️  LƯU Ý QUAN TRỌNG:
+ * File này được viết khi dự án định refactor sang React + Vite.
+ * HIỆN TẠI frontend đang dùng HTML + JS thuần → các lệnh npm run dev, 
+ * cấu trúc src/data/*, Home.jsx... KHÔNG TỒN TẠI.
+ *
+ * Hướng dẫn chạy thật → xem CACH_CHAY_FRONTEND.md hoặc dùng start-frontend.bat
  */
 
 # 📁 Cấu Trúc Thư Mục

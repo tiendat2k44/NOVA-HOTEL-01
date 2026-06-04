@@ -1,29 +1,43 @@
 # Nova Hotel Frontend
 
-Frontend React + Vite cho hệ thống đặt phòng Nova Hotel.
+Frontend dùng HTML + CSS + JavaScript thuần (multi-page app).
 
-## Chạy dự án
+> **Lưu ý**: Đây KHÔNG phải dự án React/Vite. Các file hướng dẫn cũ đã lỗi thời.
 
-```bash
-npm install
-npm run dev
-```
+## Chạy nhanh nhất
 
-## Kiểm tra chất lượng
+Từ thư mục gốc dự án:
 
 ```bash
-npm run lint
-npm run build
+# Windows
+start-frontend.bat
+# hoặc
+start-frontend.ps1
 ```
 
-## Cấu trúc chính
+Server sẽ chạy tại: **http://localhost:5500**
 
-- `src/App.jsx`: wrapper ứng dụng, router, navbar, footer
-- `src/routes/AppRouter.jsx`: khai báo route public, customer, admin
-- `src/context/AuthContext.jsx`: quản lý xác thực và token
-- `src/services/api.js`: lớp gọi API Axios
+## Chạy thủ công (nếu không dùng script)
 
-## Ghi chú
+```bash
+cd frontend
+npx --yes http-server . -p 5500 -o --cors
+```
 
-- Giao diện dùng React Router, Tailwind CSS và react-hot-toast.
-- Backend mặc định chạy tại `http://localhost:8080/api`, có thể đổi bằng biến môi trường `VITE_API_BASE_URL`.
+## Yêu cầu
+
+- Node.js (để dùng npx http-server)
+- Backend Spring Boot (port 8080) nếu muốn dữ liệu thật từ MongoDB
+
+## Cấu trúc
+
+- `index.html`, `login.html`, `rooms/`, `admin/`, `user/` → các trang chính
+- `assets/js/` → JavaScript xử lý (auth, booking, rooms...)
+- `assets/css/style.css` → style chung
+- `components/header.html` + `footer.html` → được load động bằng JS
+
+## Kết nối Backend
+
+Frontend gọi API tại `http://localhost:8080` (đã cấu hình CORS ở backend).
+
+Không cần proxy vì đã cho phép origin `http://localhost:5500`.

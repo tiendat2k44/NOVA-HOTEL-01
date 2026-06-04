@@ -658,6 +658,127 @@ img {
   color: white;
 }
 
+/* === Text contrast fixes === */
+.text-muted-soft {
+  color: var(--nova-muted);
+}
+
+/* Light text on dark footers/sidebars */
+.luxury-footer .text-muted-soft,
+.sidebar-admin .text-muted-soft,
+footer .text-muted-soft {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* Status badges (were missing → low contrast / invisible) */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+
+.status-active,
+.status-confirmed,
+.status-completed {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.status-pending {
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.status-cancelled {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+.status-maintenance {
+  background: rgba(107, 114, 128, 0.12);
+  color: #374151;
+  border-color: rgba(107, 114, 128, 0.25);
+}
+
+/* Fix btn-luxury-outline contrast on light surfaces (was white on near-white) */
+.btn-luxury-outline {
+  background: transparent;
+  color: var(--nova-ink);
+  border-color: rgba(26, 26, 26, 0.22);
+}
+
+.btn-luxury-outline:hover {
+  background: var(--nova-ink);
+  color: white;
+  border-color: var(--nova-ink);
+  transform: translateY(-2px);
+}
+
+/* Dark context outlines (hero, dark cards, sidebar etc) */
+.hero-shell .btn-luxury-outline,
+.bg-black-soft .btn-luxury-outline,
+.gradient-hero-card .btn-luxury-outline,
+.luxury-footer .btn-luxury-outline,
+.sidebar-admin .btn-luxury-outline {
+  color: rgba(255, 255, 255, 0.92);
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.hero-shell .btn-luxury-outline:hover,
+.bg-black-soft .btn-luxury-outline:hover,
+.gradient-hero-card .btn-luxury-outline:hover,
+.luxury-footer .btn-luxury-outline:hover,
+.sidebar-admin .btn-luxury-outline:hover {
+  background: white;
+  color: var(--nova-black);
+  border-color: white;
+}
+
+/* Responsive admin sidebar → compact top bar on mobile */
+@media (max-width: 991.98px) {
+  .sidebar-admin {
+    flex-direction: row !important;
+    align-items: center;
+    width: 100% !important;
+    max-width: none !important;
+    padding: 10px 14px;
+    gap: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .sidebar-admin > div:first-child {
+    margin-bottom: 0;
+  }
+  .sidebar-admin nav {
+    flex-direction: row !important;
+    flex-wrap: wrap;
+    gap: 2px;
+    margin-left: auto;
+  }
+  .sidebar-admin .nav-link {
+    padding: 5px 9px !important;
+    font-size: 0.78rem;
+    margin-bottom: 0;
+  }
+  .sidebar-admin .nav-link i {
+    display: none; /* icons hidden to save space on mobile topbar */
+  }
+  /* Hide heavy bottom user/logout on mobile topbar */
+  .sidebar-admin > div:last-child {
+    display: none;
+  }
+}
+
 .gradient-hero-card {
   background: linear-gradient(145deg, rgba(26, 26, 26, 0.98), rgba(49, 49, 49, 0.95));
   color: white;

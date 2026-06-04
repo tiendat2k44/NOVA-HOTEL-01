@@ -1,0 +1,12 @@
+{
+  "port": 5500,
+  "cors": true,
+  "cache": -1,
+  "headers": [
+    {
+      "match": ".*",
+      "key": "Permissions-Policy",
+      "value": "unload=()"
+    }
+  ]
+}
