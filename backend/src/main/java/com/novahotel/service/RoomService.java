@@ -136,12 +136,18 @@ public class RoomService {
     }
 
     public Room getRoomById(String roomId) {
+        if (roomId == null || roomId.isBlank()) {
+            throw new ResourceNotFoundException("Phòng không tìm thấy");
+        }
+        // Hỗ trợ lookup bằng mongo _id hoặc business key roomId (RMxxx)
         return roomRepository.findById(roomId)
+                .or(() -> roomRepository.findByRoomId(roomId))
                 .orElseThrow(() -> new ResourceNotFoundException("Phòng không tìm thấy"));
     }
 
     private boolean isRoomAvailable(Room room, LocalDate checkIn, LocalDate checkOut) {
-        String roomKey = room.getId() != null ? room.getId() : room.getRoomId();
+        // Ưu tiên business key roomId (RMxxx) để khớp với dữ liệu booking mẫu và tạo mới
+        String roomKey = room.getRoomId() != null ? room.getRoomId() : room.getId();
         if (roomKey == null) {
             return false;
         }

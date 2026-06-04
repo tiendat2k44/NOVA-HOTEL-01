@@ -1,12 +1,10 @@
 package com.novahotel.model;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-
-import java.util.List;
-import java.util.Objects;
 
 @Document(collection = "rooms")
 public class Room {
@@ -23,10 +21,11 @@ public class Room {
     private List<String> images;
     private String description;
     private int maxGuests;
+    private int floor;
 
     public Room() {}
 
-    public Room(String id, String roomId, String roomNumber, String name, String roomType, Price price, String status, List<String> facilities, List<String> images, String description, int maxGuests) {
+    public Room(String id, String roomId, String roomNumber, String name, String roomType, Price price, String status, List<String> facilities, List<String> images, String description, int maxGuests, int floor) {
         this.id = id;
         this.roomId = roomId;
         this.roomNumber = roomNumber;
@@ -38,6 +37,7 @@ public class Room {
         this.images = images;
         this.description = description;
         this.maxGuests = maxGuests;
+        this.floor = floor;
     }
 
     public String getId() { return id; }
@@ -72,6 +72,9 @@ public class Room {
 
     public int getMaxGuests() { return maxGuests; }
     public void setMaxGuests(int maxGuests) { this.maxGuests = maxGuests; }
+
+    public int getFloor() { return floor; }
+    public void setFloor(int floor) { this.floor = floor; }
 
     // Inner classes
     public static class Price {

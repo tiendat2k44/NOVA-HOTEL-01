@@ -28,13 +28,20 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                // Cho phép React frontend
-                .allowedOrigins("http://localhost:5173", "http://localhost:3000")
-                // Cho phép tất cả HTTP methods
+                // Cho phép các origin frontend thực tế đang dùng
+                // Lưu ý: 127.0.0.1 và localhost là 2 origin khác nhau theo browser
+                .allowedOrigins(
+                        "http://localhost:5500",
+                        "http://127.0.0.1:5500",
+                        "http://localhost:5173",
+                        "http://127.0.0.1:5173",
+                        "http://localhost:3000"
+                )
+                // Cho phép tất cả HTTP methods (rất quan trọng cho preflight OPTIONS)
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
-                // Cho phép tất cả headers
+                // Cho phép tất cả headers (đặc biệt Authorization)
                 .allowedHeaders("*")
-                // Cho phép gửi credentials (cookies, authorization headers)
+                // Cho phép gửi credentials (JWT token, cookies)
                 .allowCredentials(true)
                 // Thời gian cache CORS preflight response (giây)
                 .maxAge(3600);

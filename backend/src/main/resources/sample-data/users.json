@@ -1,0 +1,90 @@
+[
+  {
+    "userId": "USR001",
+    "email": "admin@novahotel.vn",
+    "password": "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
+    "fullName": "Đào Tiến Đạt",
+    "phone": "0987654321",
+    "role": "admin",
+    "createdAt": { "$date": "2025-01-10T08:00:00.000Z" },
+    "lastLogin": { "$date": "2026-04-20T09:15:00.000Z" },
+    "isActive": true
+  },
+  {
+    "userId": "USR002",
+    "email": "lethireception@novahotel.vn",
+    "password": "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
+    "fullName": "Lê Thị Hương",
+    "phone": "0912345678",
+    "role": "receptionist",
+    "createdAt": { "$date": "2025-02-15T10:30:00.000Z" },
+    "lastLogin": { "$date": "2026-04-19T14:20:00.000Z" },
+    "isActive": true
+  },
+  {
+    "userId": "USR003",
+    "email": "nguyenvana@gmail.com",
+    "password": "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
+    "fullName": "Nguyễn Văn An",
+    "phone": "0901122334",
+    "role": "customer",
+    "createdAt": { "$date": "2025-11-20T16:45:00.000Z" },
+    "lastLogin": { "$date": "2026-04-18T20:10:00.000Z" },
+    "isActive": true
+  },
+  {
+    "userId": "USR004",
+    "email": "tranthibich@gmail.com",
+    "password": "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
+    "fullName": "Trần Thị Bích",
+    "phone": "0935566778",
+    "role": "customer",
+    "createdAt": { "$date": "2026-01-05T11:20:00.000Z" },
+    "lastLogin": { "$date": "2026-04-15T08:55:00.000Z" },
+    "isActive": true
+  },
+  {
+    "userId": "USR005",
+    "email": "phamminhhoang@gmail.com",
+    "password": "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
+    "fullName": "Phạm Minh Hoàng",
+    "phone": "0978899001",
+    "role": "customer",
+    "createdAt": { "$date": "2026-02-28T09:00:00.000Z" },
+    "lastLogin": { "$date": "2026-04-10T19:30:00.000Z" },
+    "isActive": true
+  },
+  {
+    "userId": "USR006",
+    "email": "vuongthilananh@gmail.com",
+    "password": "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
+    "fullName": "Vương Thị Lan Anh",
+    "phone": "0944455566",
+    "role": "customer",
+    "createdAt": { "$date": "2026-03-12T14:15:00.000Z" },
+    "lastLogin": { "$date": "2026-04-20T07:45:00.000Z" },
+    "isActive": true
+  },
+  {
+    "userId": "USR007",
+    "email": "hoangvanlong@gmail.com",
+    "password": "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
+    "fullName": "Hoàng Văn Long",
+    "phone": "0961122334",
+    "role": "customer",
+    "createdAt": { "$date": "2026-04-01T10:00:00.000Z" },
+    "lastLogin": { "$date": "2026-04-19T22:00:00.000Z" },
+    "isActive": true
+  },
+  {
+    "userId": "USR008",
+    "email": "dangthithuy@gmail.com",
+    "password": "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
+    "fullName": "Đặng Thị Thủy",
+    "phone": "0982233445",
+    "role": "customer",
+    "createdAt": { "$date": "2026-04-28T09:15:00.000Z" },
+    "lastLogin": { "$date": "2026-05-05T20:40:00.000Z" },
+    "isActive": true
+  }
+]

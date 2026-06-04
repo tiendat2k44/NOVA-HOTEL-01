@@ -22,9 +22,14 @@ public class User {
     private Date lastLogin;
     private boolean isActive = true;
 
+    // For password reset
+    private String resetToken;
+    private Date resetTokenExpiry;
+
     public User() {}
 
-    public User(String id, String userId, String email, String password, String fullName, String phone, String role, Date createdAt, Date lastLogin, boolean isActive) {
+    public User(String id, String userId, String email, String password, String fullName, String phone, String role, Date createdAt, Date lastLogin, boolean isActive,
+                String resetToken, Date resetTokenExpiry) {
         this.id = id;
         this.userId = userId;
         this.email = email;
@@ -35,6 +40,8 @@ public class User {
         this.createdAt = createdAt;
         this.lastLogin = lastLogin;
         this.isActive = isActive;
+        this.resetToken = resetToken;
+        this.resetTokenExpiry = resetTokenExpiry;
     }
 
     public String getId() { return id; }
@@ -66,4 +73,10 @@ public class User {
 
     public boolean isActive() { return isActive; }
     public void setActive(boolean active) { isActive = active; }
+
+    public String getResetToken() { return resetToken; }
+    public void setResetToken(String resetToken) { this.resetToken = resetToken; }
+
+    public Date getResetTokenExpiry() { return resetTokenExpiry; }
+    public void setResetTokenExpiry(Date resetTokenExpiry) { this.resetTokenExpiry = resetTokenExpiry; }
 }

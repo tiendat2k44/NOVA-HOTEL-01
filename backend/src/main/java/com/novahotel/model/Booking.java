@@ -22,9 +22,16 @@ public class Booking {
     private String specialRequests;
     private Date createdAt;
 
+    // Denormalized fields for display (populated on create / enrichment)
+    private String bookingCode;
+    private String guestName;
+    private String roomName;
+    private String roomNumber;
+
     public Booking() {}
 
-    public Booking(String id, String bookingId, String userId, String roomId, Date checkIn, Date checkOut, String status, double totalPrice, String specialRequests, Date createdAt) {
+    public Booking(String id, String bookingId, String userId, String roomId, Date checkIn, Date checkOut, String status, double totalPrice, String specialRequests, Date createdAt,
+                   String bookingCode, String guestName, String roomName, String roomNumber) {
         this.id = id;
         this.bookingId = bookingId;
         this.userId = userId;
@@ -35,6 +42,10 @@ public class Booking {
         this.totalPrice = totalPrice;
         this.specialRequests = specialRequests;
         this.createdAt = createdAt;
+        this.bookingCode = bookingCode;
+        this.guestName = guestName;
+        this.roomName = roomName;
+        this.roomNumber = roomNumber;
     }
 
     public String getId() { return id; }
@@ -66,4 +77,16 @@ public class Booking {
 
     public Date getCreatedAt() { return createdAt; }
     public void setCreatedAt(Date createdAt) { this.createdAt = createdAt; }
+
+    public String getBookingCode() { return bookingCode; }
+    public void setBookingCode(String bookingCode) { this.bookingCode = bookingCode; }
+
+    public String getGuestName() { return guestName; }
+    public void setGuestName(String guestName) { this.guestName = guestName; }
+
+    public String getRoomName() { return roomName; }
+    public void setRoomName(String roomName) { this.roomName = roomName; }
+
+    public String getRoomNumber() { return roomNumber; }
+    public void setRoomNumber(String roomNumber) { this.roomNumber = roomNumber; }
 }

@@ -1,19 +1,31 @@
 package com.novahotel.controller;
 
-import com.novahotel.dto.ApiResponse;
-import com.novahotel.dto.RoomFilterRequest;
-import com.novahotel.model.Room;
-import com.novahotel.service.RoomService;
+import java.time.LocalDate;
+import java.util.List;
+
+import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDate;
-import java.util.List;
+import com.novahotel.dto.ApiResponse;
+import com.novahotel.dto.RoomFilterRequest;
+import com.novahotel.model.Room;
+import com.novahotel.service.RoomService;
 
 /**
  * Room Controller
@@ -35,6 +47,9 @@ public class RoomController {
      */
     @Autowired
     private RoomService roomService;
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
 
     /**
      * Lấy all phòng (có phân trang)
@@ -170,6 +185,7 @@ public class RoomController {
          * POST /api/rooms/admin
          */
         @PostMapping("/admin")
+        @PreAuthorize("hasRole('ADMIN')")
         public ResponseEntity<ApiResponse<Room>> createRoom(@RequestBody Room room) {
                 log.info("Create room: {}", room.getRoomNumber());
                 Room saved = roomService.createRoom(room);
@@ -187,6 +203,7 @@ public class RoomController {
          * PUT /api/rooms/admin/{roomId}
          */
         @PutMapping("/admin/{roomId}")
+        @PreAuthorize("hasRole('ADMIN')")
         public ResponseEntity<ApiResponse<Room>> updateRoom(
                         @PathVariable String roomId,
                         @RequestBody Room payload) {
@@ -206,6 +223,7 @@ public class RoomController {
          * DELETE /api/rooms/admin/{roomId}
          */
         @DeleteMapping("/admin/{roomId}")
+        @PreAuthorize("hasRole('ADMIN')")
         public ResponseEntity<ApiResponse<Void>> deleteRoom(@PathVariable String roomId) {
                 log.info("Delete room: {}", roomId);
                 roomService.deleteRoom(roomId);
@@ -216,4 +234,39 @@ public class RoomController {
                 );
                 return ResponseEntity.ok(response);
         }
+
+        /**
+         * DEBUG ENDPOINT: Query MongoDB raw data
+         */
+        @GetMapping("/debug/raw-count")
+        public ResponseEntity<String> debugRawCount() {
+                long count = mongoTemplate.count(new org.springframework.data.mongodb.core.query.Query(), "rooms");
+                List<Document> rawDocs = mongoTemplate.getCollection("rooms").find().into(new java.util.ArrayList<>());
+                return ResponseEntity.ok("Raw count: " + count + ", Raw docs: " + rawDocs.size() + ", First doc: " + (rawDocs.isEmpty() ? "EMPTY" : rawDocs.get(0).toJson()));
+        }
+
+        /**
+         * DEBUG ENDPOINT: Check MongoDB connection state
+         */
+        @GetMapping("/debug/db-info")
+        public ResponseEntity<String> debugDbInfo() {
+                try {
+                    // Get database name
+                    String dbName = mongoTemplate.getDb().getName();
+                    
+                    // Get all collection names
+                    java.util.Set<String> collections = mongoTemplate.getDb().listCollectionNames().into(new java.util.HashSet<>());
+                    
+                    // Count documents in "rooms" if it exists
+                    long roomsCount = 0;
+                    if (collections.contains("rooms")) {
+                        roomsCount = mongoTemplate.getDb().getCollection("rooms").countDocuments();
+                    }
+                    
+                    return ResponseEntity.ok("DB: " + dbName + ", Collections: " + collections + ", Rooms count: " + roomsCount);
+                } catch (Exception e) {
+                    return ResponseEntity.status(500).body("Error: " + e.getMessage());
+                }
+        }
 }
+

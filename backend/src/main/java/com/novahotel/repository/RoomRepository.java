@@ -17,6 +17,9 @@ public interface RoomRepository extends MongoRepository<Room, String> {
     // Tìm theo loại phòng (roomType)
     List<Room> findByRoomType(String roomType);
 
+    // Tìm phòng theo business key roomId (RMxxx) - hỗ trợ lookup linh hoạt
+    java.util.Optional<Room> findByRoomId(String roomId);
+
     // Truy vấn cốt lõi 1: Tìm phòng trống theo khoảng thời gian
     @Query("{'status': 'available'}")
     List<Room> findAvailableRooms(Date checkIn, Date checkOut);

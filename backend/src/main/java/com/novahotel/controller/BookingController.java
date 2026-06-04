@@ -78,19 +78,21 @@ public class BookingController {
     }
 
         /**
-         * Lấy toàn bộ booking cho admin hoặc màn hình quản trị
+         * Lấy toàn bộ booking cho admin hoặc màn hình quản trị (hỗ trợ phân trang)
          *
-         * GET /api/bookings
+         * GET /api/bookings?page=0&size=10
          *
-         * @return danh sách booking
+         * @return Page<Booking>
          */
         @GetMapping
         @PreAuthorize("hasRole('ADMIN')")
-        public ResponseEntity<ApiResponse<List<Booking>>> getAllBookings() {
-                log.info("Get all bookings");
-                List<Booking> bookings = bookingService.getAllBookings();
+        public ResponseEntity<ApiResponse<Page<Booking>>> getAllBookings(
+                        @RequestParam(defaultValue = "0") Integer page,
+                        @RequestParam(defaultValue = "10") Integer size) {
+                log.info("Get all bookings - page: {}, size: {}", page, size);
+                Page<Booking> bookings = bookingService.getAllBookings(page, size);
 
-                ApiResponse<List<Booking>> response = new ApiResponse<>(
+                ApiResponse<Page<Booking>> response = new ApiResponse<>(
                                 HttpStatus.OK.value(),
                                 "Bookings retrieved successfully",
                                 bookings
@@ -146,7 +148,8 @@ public class BookingController {
         log.info("Get booking: {} for user: {}", bookingId, authentication.getPrincipal());
         
         String userId = (String) authentication.getPrincipal();
-        Booking booking = bookingService.getBookingById(bookingId, userId);
+        boolean isAdmin = hasAdminRole(authentication);
+        Booking booking = bookingService.getBookingById(bookingId, userId, isAdmin);
         
         ApiResponse<Booking> response = new ApiResponse<>(
                 HttpStatus.OK.value(),
@@ -173,7 +176,8 @@ public class BookingController {
         log.info("Cancel booking: {} for user: {}", bookingId, authentication.getPrincipal());
         
         String userId = (String) authentication.getPrincipal();
-        bookingService.cancelBooking(bookingId, userId);
+        boolean isAdmin = hasAdminRole(authentication);
+        bookingService.cancelBooking(bookingId, userId, isAdmin);
         
         ApiResponse<Void> response = new ApiResponse<>(
                 HttpStatus.OK.value(),
@@ -201,7 +205,8 @@ public class BookingController {
         log.info("Update booking: {} for user: {}", bookingId, authentication.getPrincipal());
         
         String userId = (String) authentication.getPrincipal();
-        Booking updatedBooking = bookingService.updateBooking(bookingId, bookingRequest, userId);
+        boolean isAdmin = hasAdminRole(authentication);
+        Booking updatedBooking = bookingService.updateBooking(bookingId, bookingRequest, userId, isAdmin);
         
         ApiResponse<Booking> response = new ApiResponse<>(
                 HttpStatus.OK.value(),
@@ -209,5 +214,11 @@ public class BookingController {
                 updatedBooking
         );
         return ResponseEntity.ok(response);
+    }
+
+    private boolean hasAdminRole(Authentication authentication) {
+        if (authentication == null || authentication.getAuthorities() == null) return false;
+        return authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority() != null && a.getAuthority().toUpperCase().contains("ADMIN"));
     }
 }

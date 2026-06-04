@@ -12,6 +12,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 import java.util.List;
 
 /**
@@ -57,19 +59,21 @@ public class UserController {
     }
 
     /**
-     * Lấy danh sách toàn bộ người dùng cho màn hình admin
+     * Lấy danh sách toàn bộ người dùng cho màn hình admin (phân trang)
      *
-     * GET /api/users
+     * GET /api/users?page=0&size=10
      *
-     * @return danh sách user
+     * @return Page<User>
      */
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<List<User>>> getAllUsers() {
-        log.info("Get all users");
-        List<User> users = userService.getAllUsers();
+    public ResponseEntity<ApiResponse<org.springframework.data.domain.Page<User>>> getAllUsers(
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        log.info("Get all users - page: {}, size: {}", page, size);
+        org.springframework.data.domain.Page<User> users = userService.getAllUsers(page, size);
 
-        ApiResponse<List<User>> response = new ApiResponse<>(
+        ApiResponse<org.springframework.data.domain.Page<User>> response = new ApiResponse<>(
                 HttpStatus.OK.value(),
                 "Users retrieved successfully",
                 users
@@ -151,21 +155,26 @@ public class UserController {
      * Đổi mật khẩu
      * 
      * PUT /api/users/change-password
+     * Body JSON: { "currentPassword": "...", "newPassword": "..." }
      * 
-     * @param oldPassword Mật khẩu cũ
-     * @param newPassword Mật khẩu mới
+     * @param body chứa currentPassword + newPassword
      * @param authentication Authentication object
      * @return Success message
      */
     @PutMapping("/change-password")
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
     public ResponseEntity<ApiResponse<Void>> changePassword(
-            @RequestParam String oldPassword,
-            @RequestParam String newPassword,
+            @RequestBody Map<String, String> body,
             Authentication authentication) {
         log.info("Change password for user: {}", authentication.getPrincipal());
         String userId = (String) authentication.getPrincipal();
-        userService.changePassword(userId, oldPassword, newPassword);
+        String currentPassword = body != null ? body.get("currentPassword") : null;
+        String newPassword = body != null ? body.getOrDefault("newPassword", body.get("newPass")) : null;
+        if (currentPassword == null) {
+            // fallback cho tương thích cũ
+            currentPassword = body != null ? body.get("oldPassword") : null;
+        }
+        userService.changePassword(userId, currentPassword, newPassword);
         
         ApiResponse<Void> response = new ApiResponse<>(
                 HttpStatus.OK.value(),

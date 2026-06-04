@@ -2,8 +2,11 @@ package com.novahotel.controller;
 
 import com.novahotel.dto.AuthResponse;
 import com.novahotel.dto.ApiResponse;
+import com.novahotel.dto.ForgotPasswordRequest;
+import com.novahotel.dto.GoogleLoginRequest;
 import com.novahotel.dto.LoginRequest;
 import com.novahotel.dto.RegisterRequest;
+import com.novahotel.dto.ResetPasswordRequest;
 import com.novahotel.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,6 +94,55 @@ public class AuthController {
         ApiResponse<AuthResponse> response = new ApiResponse<>(
                 HttpStatus.OK.value(),
                 "Token refreshed successfully",
+                authResponse
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Quên mật khẩu - gửi link reset (demo log ra console)
+     * POST /api/auth/forgot-password
+     */
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        log.info("Forgot password request for: {}", request.getEmail());
+        userService.initiatePasswordReset(request.getEmail());
+
+        ApiResponse<Void> response = new ApiResponse<>(
+                HttpStatus.OK.value(),
+                "Nếu email tồn tại, hướng dẫn đặt lại mật khẩu đã được gửi (xem console backend cho demo)."
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Reset mật khẩu bằng token
+     * POST /api/auth/reset-password
+     */
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@RequestBody ResetPasswordRequest request) {
+        log.info("Reset password with token");
+        userService.resetPassword(request.getToken(), request.getNewPassword());
+
+        ApiResponse<Void> response = new ApiResponse<>(
+                HttpStatus.OK.value(),
+                "Mật khẩu đã được đặt lại thành công. Vui lòng đăng nhập lại."
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Đăng nhập / Đăng ký bằng Google (nhận credential/idToken từ frontend Google GIS)
+     * POST /api/auth/google
+     */
+    @PostMapping("/google")
+    public ResponseEntity<ApiResponse<AuthResponse>> googleLogin(@RequestBody GoogleLoginRequest request) {
+        log.info("Google login request");
+        AuthResponse authResponse = userService.googleLogin(request.getCredential());
+
+        ApiResponse<AuthResponse> response = new ApiResponse<>(
+                HttpStatus.OK.value(),
+                "Google login successful",
                 authResponse
         );
         return ResponseEntity.ok(response);

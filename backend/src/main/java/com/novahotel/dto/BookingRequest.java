@@ -48,6 +48,11 @@ public class BookingRequest {
      */
     private String contactPhone;
 
+    /**
+     * Trạng thái (dùng cho admin update: pending, confirmed, completed, cancelled)
+     */
+    private String status;
+
     public BookingRequest() {}
     public BookingRequest(String roomId, LocalDate checkInDate, LocalDate checkOutDate, Integer numberOfGuests, String notes, String contactName, String contactEmail, String contactPhone) {
         this.roomId = roomId; this.checkInDate = checkInDate; this.checkOutDate = checkOutDate; this.numberOfGuests = numberOfGuests; this.notes = notes; this.contactName = contactName; this.contactEmail = contactEmail; this.contactPhone = contactPhone;
@@ -76,4 +81,7 @@ public class BookingRequest {
 
     public String getContactPhone() { return contactPhone; }
     public void setContactPhone(String contactPhone) { this.contactPhone = contactPhone; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

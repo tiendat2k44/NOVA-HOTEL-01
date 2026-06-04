@@ -6,11 +6,20 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
 
 import com.novahotel.config.JwtConfig;
 import com.novahotel.dto.AuthResponse;
@@ -26,6 +35,8 @@ import com.novahotel.security.RoleUtils;
 @Service
 public class UserService {
 
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
+
     @Autowired
     private UserRepository userRepository;
     
@@ -38,8 +49,17 @@ public class UserService {
     @Autowired
     private AuthenticationManager authenticationManager;
 
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+    @Value("${google.client-id:}")
+    private String googleClientId;
+
+    public org.springframework.data.domain.Page<User> getAllUsers(int page, int size) {
+        int safePage = Math.max(0, page);
+        int safeSize = Math.max(1, size);
+        java.util.List<User> all = userRepository.findAll();
+        int start = Math.min(safePage * safeSize, all.size());
+        int end = Math.min(start + safeSize, all.size());
+        java.util.List<User> pageContent = all.subList(start, end);
+        return new org.springframework.data.domain.PageImpl<>(pageContent, org.springframework.data.domain.PageRequest.of(safePage, safeSize), all.size());
     }
 
     public Optional<User> getUserByEmail(String email) {
@@ -230,5 +250,158 @@ public class UserService {
             user.setPassword(passwordEncoder.encode(userUpdate.getPassword()));
         }
         return userRepository.save(user);
+    }
+
+    /**
+     * Bắt đầu quy trình quên mật khẩu.
+     * Tạo token reset, lưu vào user, log link demo (thay vì gửi email thật).
+     */
+    public void initiatePasswordReset(String email) {
+        if (email == null || email.isBlank()) {
+            throw new BadRequestException("Email không được để trống");
+        }
+        Optional<User> opt = userRepository.findByEmail(email.trim().toLowerCase());
+        if (opt.isEmpty()) {
+            // Không tiết lộ user có tồn tại hay không (bảo mật)
+            return;
+        }
+        User user = opt.get();
+        String token = UUID.randomUUID().toString();
+        user.setResetToken(token);
+        user.setResetTokenExpiry(new Date(System.currentTimeMillis() + 60 * 60 * 1000)); // 1 giờ
+        userRepository.save(user);
+
+        // DEMO: In ra console để dev/test dễ dàng. Thực tế nên gửi email.
+        String resetLink = "http://localhost:5173/reset-password?token=" + token;
+        System.out.println("\n=== [DEMO] PASSWORD RESET ===");
+        System.out.println("User: " + email);
+        System.out.println("Reset link: " + resetLink);
+        System.out.println("Token expires in 1 hour.");
+        System.out.println("=============================\n");
+    }
+
+    /**
+     * Thực hiện reset mật khẩu với token.
+     */
+    public void resetPassword(String token, String newPassword) {
+        if (token == null || token.isBlank()) {
+            throw new BadRequestException("Token không hợp lệ");
+        }
+        if (newPassword == null || newPassword.trim().length() < 6) {
+            throw new BadRequestException("Mật khẩu mới phải có ít nhất 6 ký tự");
+        }
+
+        Optional<User> opt = userRepository.findByResetToken(token);
+        if (opt.isEmpty()) {
+            throw new BadRequestException("Token không hợp lệ hoặc đã được sử dụng");
+        }
+
+        User user = opt.get();
+        if (user.getResetTokenExpiry() == null || user.getResetTokenExpiry().before(new Date())) {
+            // clear expired
+            user.setResetToken(null);
+            user.setResetTokenExpiry(null);
+            userRepository.save(user);
+            throw new BadRequestException("Token đã hết hạn. Vui lòng yêu cầu lại.");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setResetToken(null);
+        user.setResetTokenExpiry(null);
+        user.setLastLogin(new Date());
+        userRepository.save(user);
+    }
+
+    /**
+     * Xử lý đăng nhập bằng Google ID token.
+     * Verify token, lấy email/name, tạo user mới nếu chưa có (role customer), trả JWT.
+     */
+    public AuthResponse googleLogin(String credential) {
+        if (credential == null || credential.isBlank()) {
+            throw new BadRequestException("Thiếu Google credential");
+        }
+        if (googleClientId == null || googleClientId.isBlank() || googleClientId.startsWith("your-")) {
+            // Cho phép dev/test mà không cần key thật (không verify chặt)
+            log.warn("Google client ID chưa cấu hình. Đang dùng chế độ DEV (không verify token đầy đủ).");
+        } else {
+            try {
+                GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
+                        new NetHttpTransport(),
+                        new GsonFactory()
+                )
+                        .setAudience(java.util.Collections.singletonList(googleClientId))
+                        .build();
+
+                GoogleIdToken idToken = verifier.verify(credential);
+                if (idToken == null) {
+                    throw new UnauthorizedException("Google token không hợp lệ");
+                }
+                GoogleIdToken.Payload payload = idToken.getPayload();
+                String email = payload.getEmail();
+                String name = (String) payload.get("name");
+                // Use verified email
+                return loginOrRegisterWithGoogle(email, name != null ? name : email.split("@")[0]);
+            } catch (Exception ex) {
+                log.error("Google token verify failed", ex);
+                throw new UnauthorizedException("Không thể xác thực Google: " + ex.getMessage());
+            }
+        }
+
+        // Dev fallback: parse payload cơ bản (không an toàn production)
+        try {
+            String[] parts = credential.split("\\.");
+            if (parts.length >= 2) {
+                String payloadJson = new String(java.util.Base64.getUrlDecoder().decode(parts[1]));
+                // crude parse
+                String email = extractJsonField(payloadJson, "email");
+                String name = extractJsonField(payloadJson, "name");
+                if (email != null) {
+                    return loginOrRegisterWithGoogle(email, name != null ? name : email.split("@")[0]);
+                }
+            }
+        } catch (Exception ignored) {}
+
+        throw new BadRequestException("Google credential không hợp lệ");
+    }
+
+    private AuthResponse loginOrRegisterWithGoogle(String email, String fullName) {
+        Optional<User> existing = userRepository.findByEmail(email);
+        User user;
+        if (existing.isPresent()) {
+            user = existing.get();
+        } else {
+            user = new User();
+            user.setId(UUID.randomUUID().toString());
+            user.setUserId(UUID.randomUUID().toString());
+            user.setEmail(email);
+            user.setFullName(fullName);
+            user.setPhone("");
+            user.setRole("customer");
+            user.setCreatedAt(new Date());
+            user.setLastLogin(new Date());
+            user.setActive(true);
+            // No password for Google users (or set random)
+            user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
+            user = userRepository.save(user);
+        }
+        user.setLastLogin(new Date());
+        userRepository.save(user);
+
+        String normalizedRole = RoleUtils.normalizeRole(user.getRole());
+        String token = jwtConfig.generateToken(user.getId(), normalizedRole);
+        return new AuthResponse(user.getId(), user.getEmail(), user.getFullName(), normalizedRole, token);
+    }
+
+    private String extractJsonField(String json, String field) {
+        try {
+            String key = "\"" + field + "\":\"";
+            int start = json.indexOf(key);
+            if (start < 0) return null;
+            start += key.length();
+            int end = json.indexOf("\"", start);
+            return end > start ? json.substring(start, end) : null;
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
