@@ -16,23 +16,30 @@ export function RequireAuth({ children }) {
   return children;
 }
 
+/**
+ * RequireAdmin / RequireStaff
+ * Cho phép cả ADMIN và RECEPTIONIST (lễ tân) truy cập khu vực quản trị.
+ * Lễ tân chỉ có quyền hạn chế (chủ yếu xác nhận booking).
+ */
 export function RequireAdmin({ children }) {
-  const { isLoggedIn, isAdmin } = useAuth();
+  const { isLoggedIn, isAdmin, isReceptionist, isStaff } = useAuth();
   const location = useLocation();
   const { showToast } = useToast();
 
+  const canAccess = isStaff || isAdmin || isReceptionist;
+
   useEffect(() => {
     if (!isLoggedIn) showToast('Vui lòng đăng nhập để tiếp tục.', 'warning');
-    else if (!isAdmin) showToast('Bạn không có quyền truy cập khu vực quản trị.', 'danger');
-  }, [isLoggedIn, isAdmin, showToast]);
+    else if (!canAccess) showToast('Bạn không có quyền truy cập khu vực quản trị.', 'danger');
+  }, [isLoggedIn, canAccess, showToast]);
 
   if (!isLoggedIn) return <Navigate to="/login" state={{ from: location }} replace />;
-  if (!isAdmin) return <Navigate to="/" replace />;
+  if (!canAccess) return <Navigate to="/" replace />;
   return children;
 }
 
 export function GuestOnly({ children }) {
-  const { isLoggedIn, isAdmin } = useAuth();
-  if (isLoggedIn) return <Navigate to={isAdmin ? '/admin' : '/'} replace />;
+  const { isLoggedIn, isAdmin, isReceptionist } = useAuth();
+  if (isLoggedIn) return <Navigate to={(isAdmin || isReceptionist) ? '/admin' : '/'} replace />;
   return children;
 }

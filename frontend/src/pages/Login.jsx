@@ -149,7 +149,7 @@ export default function Login() {
                 <span className="kicker">Tài khoản</span>
                 <h1 className="section-title mt-3">Đăng nhập vào hệ thống NOVA HOTEL</h1>
                 <p className="section-subtitle ms-0">
-                  Sử dụng tài khoản khách hàng hoặc admin để quản lý đặt phòng qua REST API.
+                  Sử dụng tài khoản khách hàng hoặc quản trị viên để quản lý đặt phòng qua REST API.
                 </p>
               </Reveal>
             </div>

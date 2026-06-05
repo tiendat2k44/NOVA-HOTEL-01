@@ -1,15 +1,26 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiCall, unwrapList } from '../../api/client';
+import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 import { formatCurrency, formatDate } from '../../utils/format';
 
 export default function AdminRevenue() {
+  const { showToast } = useToast();
+  const { isAdmin } = useAuth();
+  const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
 
   useEffect(() => {
+    if (!isAdmin) {
+      showToast('Chỉ quản trị viên mới được xem doanh thu.', 'danger');
+      navigate('/admin/bookings', { replace: true });
+      return;
+    }
     apiCall('/bookings?size=100', 'GET')
       .then((res) => setBookings(unwrapList(res)))
       .catch(() => setBookings([]));
-  }, []);
+  }, [isAdmin, navigate, showToast]);
 
   const revenueBookings = bookings.filter((b) => {
     const status = String(b?.status || '').toLowerCase();

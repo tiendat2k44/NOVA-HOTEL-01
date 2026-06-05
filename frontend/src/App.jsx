@@ -7,6 +7,7 @@ import AdminLayout from './pages/admin/AdminLayout';
 import AdminRevenue from './pages/admin/AdminRevenue';
 import AdminRooms from './pages/admin/AdminRooms';
 import AdminUsers from './pages/admin/AdminUsers';
+import BookingDetail from './pages/BookingDetail';
 import Home from './pages/Home';
 import ForgotPassword from './pages/ForgotPassword';
 import Login from './pages/Login';
@@ -20,6 +21,7 @@ import Rooms from './pages/Rooms';
 export default function App() {
   return (
     <Routes>
+      {/* Public + authenticated user routes (have Header + Footer) */}
       <Route element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="rooms" element={<Rooms />} />
@@ -51,6 +53,14 @@ export default function App() {
           }
         />
         <Route
+          path="bookings/:id"
+          element={
+            <RequireAuth>
+              <BookingDetail />
+            </RequireAuth>
+          }
+        />
+        <Route
           path="profile"
           element={
             <RequireAuth>
@@ -58,22 +68,27 @@ export default function App() {
             </RequireAuth>
           }
         />
-        <Route
-          path="admin"
-          element={
-            <RequireAdmin>
-              <AdminLayout />
-            </RequireAdmin>
-          }
-        >
-          <Route index element={<AdminDashboard />} />
-          <Route path="rooms" element={<AdminRooms />} />
-          <Route path="bookings" element={<AdminBookings />} />
-          <Route path="users" element={<AdminUsers />} />
-          <Route path="revenue" element={<AdminRevenue />} />
-        </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
+
+      {/* Admin / Receptionist routes - separate layout (no public Header/Footer) */}
+      <Route
+        path="admin"
+        element={
+          <RequireAdmin>
+            <AdminLayout />
+          </RequireAdmin>
+        }
+      >
+        <Route index element={<AdminDashboard />} />
+        <Route path="rooms" element={<AdminRooms />} />
+        <Route path="bookings" element={<AdminBookings />} />
+        <Route path="bookings/:id" element={<BookingDetail />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="revenue" element={<AdminRevenue />} />
+      </Route>
+
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

@@ -61,6 +61,7 @@ api.interceptors.request.use(
   (config) => {
     const token = getAuthToken();
     if (token) {
+      config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
     }
     console.log(`[Axios API] ${config.method?.toUpperCase()} ${config.url}`, config.data || config.params || '');
@@ -152,3 +153,27 @@ export const extractAuthPayload = (response) => {
 
   return { token, user };
 };
+
+/**
+ * Upload ảnh phòng (dành cho admin). Sử dụng FormData.
+ * Trả về payload (đã qua interceptor -> body của ApiResponse)
+ * Sử dụng cùng với unwrap() ở phía gọi: const body = unwrap(res) || res; const url = body?.url || body?.data?.url;
+ */
+export async function uploadRoomImage(file) {
+  if (!file) throw new Error('Không có file để upload');
+  const formData = new FormData();
+  formData.append('file', file);
+  const token = getAuthToken();
+  
+  const requestConfig = {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      // Setting Content-Type to undefined removes the global default 'application/json'
+      // This allows axios + browser to automatically set the correct 
+      // 'multipart/form-data; boundary=----WebKitFormBoundary...' for Spring's MultipartFile
+      'Content-Type': undefined
+    }
+  };
+  
+  return api.post('/uploads/rooms', formData, requestConfig);
+}

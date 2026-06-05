@@ -35,6 +35,7 @@ export const toDisplayRoom = (room) => {
     floor: room?.floor ?? '',
     description: room?.description || '',
     amenities,
+    images,
     image: room?.image || images[0] || DEFAULT_IMAGE,
     rating: Number(room?.rating || 4.8),
     reviews: Number(room?.reviews || 0),

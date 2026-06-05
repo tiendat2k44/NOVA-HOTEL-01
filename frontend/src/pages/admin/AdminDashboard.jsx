@@ -1,22 +1,32 @@
 import { useEffect, useState } from 'react';
 import { apiCall, unwrapList } from '../../api/client';
+import { useAuth } from '../../context/AuthContext';
 import { formatCurrency, formatDate } from '../../utils/format';
 import { toDisplayRoom } from '../../utils/rooms';
 
 export default function AdminDashboard() {
+  const { isAdmin } = useAuth();
   const [stats, setStats] = useState({ revenue: 0, bookings: 0, rooms: 0, users: 0 });
   const [latest, setLatest] = useState([]);
 
   useEffect(() => {
     const load = async () => {
-      const [roomsRes, bookingsRes, usersRes] = await Promise.all([
-        apiCall('/rooms?size=100', 'GET').catch(() => null),
-        apiCall('/bookings?size=100', 'GET').catch(() => null),
-        apiCall('/users?size=100', 'GET').catch(() => null)
-      ]);
-      const rooms = unwrapList(roomsRes).map(toDisplayRoom);
+      // Lễ tân chỉ fetch bookings (không có quyền rooms/users)
+      const bookingsRes = await apiCall('/bookings?size=100', 'GET').catch(() => null);
       const bookings = unwrapList(bookingsRes);
-      const users = unwrapList(usersRes);
+
+      let rooms = [];
+      let users = [];
+
+      if (isAdmin) {
+        const [roomsRes, usersRes] = await Promise.all([
+          apiCall('/rooms?size=100', 'GET').catch(() => null),
+          apiCall('/users?size=100', 'GET').catch(() => null)
+        ]);
+        rooms = unwrapList(roomsRes).map(toDisplayRoom);
+        users = unwrapList(usersRes);
+      }
+
       const revenue = bookings.reduce((s, b) => s + Number(b.total || b.totalPrice || 0), 0);
       setStats({
         revenue,
@@ -27,18 +37,20 @@ export default function AdminDashboard() {
       setLatest(bookings.slice(0, 5));
     };
     load();
-  }, []);
+  }, [isAdmin]);
 
   return (
     <div data-admin-dashboard>
       <div className="row g-4 mb-4">
         {[
-          ['Doanh thu', formatCurrency(stats.revenue), 'VND'],
           ['Đặt phòng', stats.bookings, 'Tổng số'],
-          ['Phòng', stats.rooms, 'Đang quản lý'],
-          ['Người dùng', stats.users, 'Tài khoản']
+          ...(isAdmin ? [
+            ['Doanh thu', formatCurrency(stats.revenue), 'VND'],
+            ['Phòng', stats.rooms, 'Đang quản lý'],
+            ['Người dùng', stats.users, 'Tài khoản']
+          ] : [])
         ].map(([title, value, sub]) => (
-          <div className="col-md-3" key={title}>
+          <div className={`col-md-${isAdmin ? '3' : '6'}`} key={title}>
             <div className="stat-card h-100">
               <div className="text-muted-soft small text-uppercase fw-semibold">{title}</div>
               <h3 className="display-6 mb-0">{value}</h3>

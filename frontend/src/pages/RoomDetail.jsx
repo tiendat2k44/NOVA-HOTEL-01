@@ -26,6 +26,7 @@ export default function RoomDetail() {
   const [room, setRoom] = useState(null);
   const [related, setRelated] = useState([]);
   const [reviews, setReviews] = useState([]);
+  const [myBookings, setMyBookings] = useState([]);
   const [form, setForm] = useState({
     checkIn: '',
     checkOut: '',
@@ -82,8 +83,32 @@ export default function RoomDetail() {
     }
   }, [user]);
 
+  // Load user's bookings to determine if they can review (must have completed booking for this room)
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setMyBookings([]);
+      return;
+    }
+    apiCall('/bookings/my-bookings?size=100', 'GET')
+      .then((res) => setMyBookings(unwrapList(res) || []))
+      .catch(() => setMyBookings([]));
+  }, [isLoggedIn]);
+
   const nights = useMemo(() => calculateNights(form.checkIn, form.checkOut), [form.checkIn, form.checkOut]);
   const total = room ? room.price * nights : 0;
+
+  const canReview = useMemo(() => {
+    if (!isLoggedIn || !id) return false;
+    return myBookings.some((b) => {
+      const bRoomId = b.roomId || b.roomNumber || '';
+      const roomIdMatch = bRoomId === id ||
+        bRoomId === room?.id ||
+        bRoomId === room?.code ||
+        (room?.name && b.roomName === room.name);
+      const isCompleted = String(b.status || '').toLowerCase() === 'completed';
+      return roomIdMatch && isCompleted;
+    });
+  }, [myBookings, id, room, isLoggedIn]);
 
   const submitBooking = async (e) => {
     e.preventDefault();
@@ -92,6 +117,17 @@ export default function RoomDetail() {
       navigate('/login');
       return;
     }
+
+    // Client-side: user chỉ được 1 booking active (pending/paid/confirmed) tại 1 thời điểm
+    const hasActiveBooking = myBookings.some((b) => {
+      const st = String(b.status || '').toLowerCase();
+      return !['cancelled', 'completed'].includes(st);
+    });
+    if (hasActiveBooking) {
+      showToast('Bạn chỉ có thể đặt phòng tại một thời điểm. Vui lòng hoàn tất hoặc hủy đơn đặt phòng hiện tại trước khi đặt phòng mới.', 'warning');
+      return;
+    }
+
     try {
       await apiCall('/bookings', 'POST', {
         roomId: room.id,
@@ -103,7 +139,7 @@ export default function RoomDetail() {
         contactEmail: form.email,
         contactPhone: form.phone
       });
-      showToast('Đặt phòng thành công!', 'success');
+      showToast('Đặt phòng thành công! Email xác nhận đã gửi. Vui lòng kiểm tra email và thanh toán QR VietQR tại Lịch sử đặt phòng.', 'success');
       navigate('/my-bookings');
     } catch (err) {
       showToast(err.message || 'Không thể đặt phòng.', 'danger');
@@ -114,6 +150,10 @@ export default function RoomDetail() {
     e.preventDefault();
     if (!isLoggedIn) {
       showToast('Đăng nhập để gửi đánh giá.', 'warning');
+      return;
+    }
+    if (!canReview) {
+      showToast('Bạn chỉ có thể gửi đánh giá sau khi đã hoàn thành đặt phòng cho phòng này.', 'warning');
       return;
     }
     const fd = new FormData(e.target);
@@ -238,21 +278,32 @@ export default function RoomDetail() {
                 <strong>★ {r.rating}</strong> — {r.comment || r.content}
               </div>
             ))}
-            <form className="form-luxury mt-3" onSubmit={submitReview}>
-              <div className="mb-2">
-                <select name="rating" className="form-select" defaultValue={5}>
-                  {[5, 4, 3, 2, 1].map((n) => (
-                    <option key={n} value={n}>
-                      {n} sao
-                    </option>
-                  ))}
-                </select>
+            {canReview ? (
+              <form className="form-luxury mt-3" onSubmit={submitReview}>
+                <div className="mb-2">
+                  <select name="rating" className="form-select" defaultValue={5}>
+                    {[5, 4, 3, 2, 1].map((n) => (
+                      <option key={n} value={n}>
+                        {n} sao
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <textarea name="comment" className="form-control mb-2" rows={3} required />
+                <button type="submit" className="btn-luxury btn-luxury-outline">
+                  Gửi đánh giá
+                </button>
+              </form>
+            ) : isLoggedIn ? (
+              <div className="alert alert-light small mt-3">
+                Bạn chỉ có thể gửi đánh giá sau khi đã hoàn thành (completed) ít nhất một đặt phòng cho phòng này.
+                <div className="mt-1">
+                  <Link to="/my-bookings" className="text-decoration-underline">Xem lịch sử đặt phòng của bạn</Link>
+                </div>
               </div>
-              <textarea name="comment" className="form-control mb-2" rows={3} required />
-              <button type="submit" className="btn-luxury btn-luxury-outline">
-                Gửi đánh giá
-              </button>
-            </form>
+            ) : (
+              <p className="text-muted-soft small mt-2">Vui lòng đăng nhập và hoàn thành đặt phòng để có thể gửi đánh giá.</p>
+            )}
           </section>
         </div>
       </section>

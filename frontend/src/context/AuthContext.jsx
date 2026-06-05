@@ -7,7 +7,7 @@ import {
   setAuthToken,
   setAuthUser
 } from '../api/client';
-import { isAdmin } from '../utils/roles';
+import { isAdmin, isReceptionist, isStaff } from '../utils/roles';
 
 const AuthContext = createContext(null);
 
@@ -45,6 +45,8 @@ export function AuthProvider({ children }) {
       user,
       isLoggedIn: Boolean(user),
       isAdmin: isAdmin(user),
+      isReceptionist: isReceptionist(user),
+      isStaff: isStaff(user),
       login,
       register,
       logout,

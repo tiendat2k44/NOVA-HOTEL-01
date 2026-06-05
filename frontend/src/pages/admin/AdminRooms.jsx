@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { apiCall, unwrap } from '../../api/client';
+import { useNavigate } from 'react-router-dom';
+import { apiCall, unwrap, uploadRoomImage } from '../../api/client';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 import { formatCurrency } from '../../utils/format';
 import { getStatusBadgeClass, getStatusLabel, toDisplayRoom } from '../../utils/rooms';
 import Modal from '../../components/Modal';
@@ -18,11 +20,23 @@ const emptyForm = {
   status: 'available',
   floor: '',
   description: '',
-  amenities: ''
+  amenities: '',
+  images: []
 };
 
 export default function AdminRooms() {
   const { showToast } = useToast();
+  const { isAdmin } = useAuth();
+  const navigate = useNavigate();
+
+  // Lễ tân không được truy cập trang này
+  useEffect(() => {
+    if (!isAdmin) {
+      showToast('Chỉ quản trị viên mới được quản lý phòng.', 'danger');
+      navigate('/admin/bookings', { replace: true });
+    }
+  }, [isAdmin, navigate, showToast]);
+
   const [rooms, setRooms] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [search, setSearch] = useState('');
@@ -35,6 +49,7 @@ export default function AdminRooms() {
   const [totalPages, setTotalPages] = useState(0);
 
   const [showModal, setShowModal] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const load = useCallback(async (page = currentPage, size = pageSize) => {
     try {
@@ -80,7 +95,8 @@ export default function AdminRooms() {
         status: room.status,
         floor: room.floor,
         description: room.description,
-        amenities: room.amenities.join(', ')
+        amenities: room.amenities.join(', '),
+        images: Array.isArray(room.images) ? room.images : []
       });
     } else {
       resetForm();
@@ -91,6 +107,41 @@ export default function AdminRooms() {
   const closeModal = () => {
     setShowModal(false);
     resetForm();
+  };
+
+  const handleImageFiles = async (fileList) => {
+    if (!fileList || fileList.length === 0) return;
+    setUploading(true);
+    const added = [];
+    try {
+      for (const file of fileList) {
+        if (file.size > 8 * 1024 * 1024) { // ~8MB client check
+          showToast(`Ảnh "${file.name}" quá lớn (giới hạn ~8MB)`, 'danger');
+          continue;
+        }
+        const payload = await uploadRoomImage(file);
+        const body = unwrap(payload) || payload;
+        const url = body?.url || body?.data?.url;
+        if (url && !form.images.includes(url) && !added.includes(url)) {
+          added.push(url);
+        }
+      }
+      if (added.length > 0) {
+        setForm((f) => ({ ...f, images: [...f.images, ...added] }));
+        showToast(`Đã tải lên ${added.length} ảnh.`, 'success');
+      }
+    } catch (err) {
+      showToast(err.message || 'Tải ảnh thất bại. Kiểm tra backend đang chạy và bạn là ADMIN.', 'danger');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = (index) => {
+    setForm((f) => ({
+      ...f,
+      images: f.images.filter((_, i) => i !== index)
+    }));
   };
 
   const editRoom = (room) => {
@@ -106,7 +157,9 @@ export default function AdminRooms() {
     status: form.status,
     facilities: (form.amenities || '').split(',').map((s) => s.trim()).filter(Boolean),
     description: form.description,
-    maxGuests: Number(form.capacity || 0)
+    maxGuests: Number(form.capacity || 0),
+    floor: Number(form.floor || 0),
+    images: Array.isArray(form.images) ? form.images : []
   });
 
   const onSubmit = async (e) => {
@@ -202,23 +255,111 @@ export default function AdminRooms() {
       >
         <form id="roomForm" className="form-luxury" onSubmit={onSubmit}>
           <div className="row g-3">
-            {['code', 'name', 'type', 'price', 'floor', 'status'].map((field) => (
-              <div className="col-md-4" key={field}>
-                <label className="form-label text-dark small">{field}</label>
-                <input
-                  className="form-control"
-                  placeholder={field}
-                  value={form[field]}
-                  onChange={(e) => setForm((f) => ({ ...f, [field]: e.target.value }))}
-                  required={field === 'code' || field === 'name'}
-                />
-              </div>
-            ))}
+            {/* Row 1: code, name, type, price */}
+            <div className="col-md-3">
+              <label className="form-label text-dark small">Mã phòng</label>
+              <input
+                className="form-control"
+                placeholder="RM001"
+                value={form.code}
+                onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="col-md-3">
+              <label className="form-label text-dark small">Tên phòng</label>
+              <input
+                className="form-control"
+                placeholder="Phòng Deluxe View Núi"
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="col-md-3">
+              <label className="form-label text-dark small">Loại phòng</label>
+              <select
+                className="form-select"
+                value={form.type}
+                onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
+              >
+                <option value="Standard">Standard</option>
+                <option value="Deluxe">Deluxe</option>
+                <option value="Suite">Suite</option>
+                <option value="Family">Family</option>
+                <option value="Premium">Premium</option>
+                <option value="Executive">Executive</option>
+              </select>
+            </div>
+            <div className="col-md-3">
+              <label className="form-label text-dark small">Giá cơ bản (VNĐ)</label>
+              <input
+                className="form-control"
+                placeholder="1250000"
+                type="number"
+                value={form.price}
+                onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
+                required
+              />
+            </div>
+
+            {/* Row 2: floor, area, bed, capacity, status */}
+            <div className="col-md-2">
+              <label className="form-label text-dark small">Tầng</label>
+              <input
+                className="form-control"
+                placeholder="2"
+                type="number"
+                value={form.floor}
+                onChange={(e) => setForm((f) => ({ ...f, floor: e.target.value }))}
+              />
+            </div>
+            <div className="col-md-2">
+              <label className="form-label text-dark small">Diện tích (m²)</label>
+              <input
+                className="form-control"
+                placeholder="28"
+                type="number"
+                value={form.area}
+                onChange={(e) => setForm((f) => ({ ...f, area: e.target.value }))}
+              />
+            </div>
+            <div className="col-md-2">
+              <label className="form-label text-dark small">Loại giường</label>
+              <input
+                className="form-control"
+                placeholder="King"
+                value={form.bed}
+                onChange={(e) => setForm((f) => ({ ...f, bed: e.target.value }))}
+              />
+            </div>
+            <div className="col-md-2">
+              <label className="form-label text-dark small">Sức chứa</label>
+              <input
+                className="form-control"
+                placeholder="2"
+                type="number"
+                value={form.capacity}
+                onChange={(e) => setForm((f) => ({ ...f, capacity: e.target.value }))}
+              />
+            </div>
+            <div className="col-md-4">
+              <label className="form-label text-dark small">Trạng thái</label>
+              <select
+                className="form-select"
+                value={form.status}
+                onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
+              >
+                <option value="available">Còn phòng (available)</option>
+                <option value="maintenance">Bảo trì (maintenance)</option>
+              </select>
+            </div>
+
             <div className="col-12">
               <label className="form-label text-dark small">Mô tả</label>
               <textarea
                 className="form-control"
-                placeholder="Mô tả"
+                placeholder="Mô tả phòng..."
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 rows={2}
@@ -228,10 +369,81 @@ export default function AdminRooms() {
               <label className="form-label text-dark small">Tiện nghi (phân cách bằng dấu phẩy)</label>
               <input
                 className="form-control"
-                placeholder="Tiện nghi (phân cách bằng dấu phẩy)"
+                placeholder="WiFi, Điều hòa, Tivi Smart, Ban công"
                 value={form.amenities}
                 onChange={(e) => setForm((f) => ({ ...f, amenities: e.target.value }))}
               />
+            </div>
+
+            {/* Images: upload from device (file) instead of manual URL entry */}
+            <div className="col-12">
+              <label className="form-label text-dark small">Hình ảnh phòng</label>
+              <div className="d-flex gap-2 align-items-center flex-wrap">
+                <input
+                  type="file"
+                  id="roomImageFileInput"
+                  multiple
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    handleImageFiles(e.target.files);
+                    // reset để chọn lại cùng file được
+                    e.target.value = '';
+                  }}
+                  disabled={uploading}
+                />
+                <button
+                  type="button"
+                  className="btn btn-outline-dark btn-sm"
+                  onClick={() => {
+                    const inp = document.getElementById('roomImageFileInput');
+                    if (inp) inp.click();
+                  }}
+                  disabled={uploading}
+                >
+                  {uploading ? 'Đang tải ảnh...' : '📁 Chọn ảnh từ thiết bị'}
+                </button>
+                <small className="text-muted">Chọn nhiều ảnh cùng lúc • JPG/PNG/WEBP/GIF • &lt;10MB</small>
+              </div>
+
+              {form.images && form.images.length > 0 && (
+                <div className="d-flex flex-wrap gap-2 mt-2">
+                  {form.images.map((imgUrl, idx) => (
+                    <div
+                      key={idx}
+                      className="position-relative border rounded overflow-hidden"
+                      style={{ width: 96, height: 64, background: '#f8f9fa' }}
+                    >
+                      <img
+                        src={imgUrl}
+                        alt={`Ảnh ${idx + 1}`}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        onError={(e) => {
+                          e.target.style.opacity = '0.3';
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-danger position-absolute"
+                        style={{ top: 2, right: 2, padding: '0 4px', lineHeight: 1, fontSize: '10px' }}
+                        onClick={() => removeImage(idx)}
+                        title="Xóa ảnh"
+                      >
+                        ×
+                      </button>
+                      <div
+                        className="position-absolute text-white small px-1"
+                        style={{ bottom: 0, left: 0, background: 'rgba(0,0,0,0.5)', fontSize: '9px' }}
+                      >
+                        {idx + 1}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {(!form.images || form.images.length === 0) && (
+                <div className="text-muted small mt-1">Chưa có ảnh. Chọn ảnh từ thiết bị (upload) để hiển thị cho khách.</div>
+              )}
             </div>
           </div>
         </form>
@@ -250,8 +462,8 @@ export default function AdminRooms() {
         <div className="col-md-3">
           <select className="form-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="">Tất cả trạng thái</option>
-            <option value="available">available</option>
-            <option value="maintenance">maintenance</option>
+            <option value="available">Còn phòng</option>
+            <option value="maintenance">Bảo trì</option>
           </select>
         </div>
         <div className="col-md-3 text-end">

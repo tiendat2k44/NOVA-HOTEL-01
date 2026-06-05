@@ -3,7 +3,7 @@ import { apiCall, unwrap } from '../api/client';
 import Reveal from '../components/Reveal';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { isAdmin } from '../utils/roles';
+import { isAdmin, getRoleLabel } from '../utils/roles';
 
 export default function Profile() {
   const { user, setUser } = useAuth();
@@ -83,7 +83,7 @@ export default function Profile() {
           <Reveal>
             <div className="profile-card p-4 mb-4">
               <h2 className="h3">{form.fullName || 'Người dùng'}</h2>
-              <span className="badge-soft">{isAdmin(user) ? 'Admin' : 'Customer'}</span>
+              <span className="badge-soft">{getRoleLabel(user?.role)}</span>
             </div>
             <form className="form-luxury content-card p-4 mb-4" onSubmit={saveProfile}>
               <h3 className="h5 mb-3">Thông tin cá nhân</h3>

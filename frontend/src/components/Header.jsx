@@ -1,11 +1,12 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getRoleLabel } from '../utils/roles';
 import { useToast } from '../context/ToastContext';
 
 const navClass = ({ isActive }) => `nav-link${isActive ? ' active' : ''}`;
 
 export default function Header() {
-  const { user, isLoggedIn, isAdmin, logout } = useAuth();
+  const { user, isLoggedIn, isAdmin, isReceptionist, isStaff, logout } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
 
@@ -58,10 +59,10 @@ export default function Header() {
                 </li>
               </>
             )}
-            {isAdmin && (
+            {(isAdmin || isReceptionist || isStaff) && (
               <li className="nav-item">
                 <NavLink className={navClass} to="/admin">
-                  Admin
+                  Quản trị
                 </NavLink>
               </li>
             )}
@@ -78,11 +79,11 @@ export default function Header() {
                     style={{
                       fontSize: '0.65rem',
                       fontWeight: 600,
-                      background: isAdmin ? '#d4af37' : '#e5e5e5',
-                      color: isAdmin ? '#1a1a1a' : '#333'
+                      background: (isAdmin || isReceptionist || isStaff) ? '#d4af37' : '#e5e5e5',
+                      color: (isAdmin || isReceptionist || isStaff) ? '#1a1a1a' : '#333'
                     }}
                   >
-                    {isAdmin ? 'Admin' : 'Customer'}
+                    {getRoleLabel(user?.role)}
                   </span>
                 </div>
                 <button

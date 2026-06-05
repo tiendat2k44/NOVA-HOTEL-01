@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiCall, unwrap } from '../../api/client';
 import { useToast } from '../../context/ToastContext';
-import { normalizeRole } from '../../utils/roles';
+import { useAuth } from '../../context/AuthContext';
+import { normalizeRole, getRoleLabel, roleOptions } from '../../utils/roles';
 import Modal from '../../components/Modal';
 import Pagination from '../../components/Pagination';
 
@@ -21,11 +23,22 @@ const toDisplayUser = (user) => ({
   email: user?.email || '',
   phone: user?.phone || user?.phoneNumber || '',
   role: normalizeRole(user?.role),
+  roleLabel: getRoleLabel(user?.role),
   status: user?.status || (user?.isActive === false ? 'inactive' : 'active')
 });
 
 export default function AdminUsers() {
   const { showToast } = useToast();
+  const { isAdmin } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isAdmin) {
+      showToast('Chỉ quản trị viên mới được quản lý người dùng.', 'danger');
+      navigate('/admin/bookings', { replace: true });
+    }
+  }, [isAdmin, navigate, showToast]);
+
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [search, setSearch] = useState('');
@@ -76,7 +89,7 @@ export default function AdminUsers() {
         await apiCall('/users/admin', 'POST', body);
         showToast('Đã tạo người dùng.', 'success');
       }
-      setForm(emptyForm);
+      closeModal();
       load();
     } catch (err) {
       showToast(err.message || 'Thao tác thất bại.', 'danger');
@@ -108,7 +121,7 @@ export default function AdminUsers() {
 
   const filtered = users.filter((u) => {
     const kw = search.toLowerCase();
-    return !kw || [u.name, u.email, u.role].some((v) => (v || '').toLowerCase().includes(kw));
+    return !kw || [u.name, u.email, u.role, u.roleLabel].some((v) => (v || '').toLowerCase().includes(kw));
   });
 
   const handlePageChange = (newPage) => {
@@ -122,6 +135,28 @@ export default function AdminUsers() {
     load(0, newSize);
   };
 
+  const openModal = (user = null) => {
+    if (user) {
+      setForm({
+        userId: user.id,
+        fullName: user.name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        role: user.role || 'customer',
+        status: user.status || 'active',
+        password: ''
+      });
+    } else {
+      setForm(emptyForm);
+    }
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setForm(emptyForm);
+  };
+
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-3">
@@ -130,7 +165,7 @@ export default function AdminUsers() {
           className="btn-luxury btn-luxury-primary btn-sm" 
           onClick={() => openModal()}
         >
-          + Thêm người dùng
+          <i className="bi bi-plus-lg me-1" /> Thêm người dùng
         </button>
       </div>
 
@@ -151,9 +186,11 @@ export default function AdminUsers() {
       >
         <form id="userForm" className="form-luxury" onSubmit={onSubmit}>
           <div className="row g-3">
-            {['fullName', 'email', 'phone', 'role', 'password'].map((field) => (
+            {['fullName', 'email', 'phone', 'password'].map((field) => (
               <div className="col-md-4" key={field}>
-                <label className="form-label text-dark small">{field}</label>
+                <label className="form-label text-dark small">
+                  {field === 'fullName' ? 'Họ tên' : field === 'email' ? 'Email' : field === 'phone' ? 'Số điện thoại' : 'Mật khẩu (để trống nếu không đổi)'}
+                </label>
                 <input
                   className="form-control"
                   placeholder={field}
@@ -164,6 +201,15 @@ export default function AdminUsers() {
                 />
               </div>
             ))}
+            {/* Vai trò với label tiếng Việt */}
+            <div className="col-md-4">
+              <label className="form-label text-dark small">Vai trò</label>
+              <select className="form-select" value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}>
+                {roleOptions.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </form>
       </Modal>
@@ -190,17 +236,19 @@ export default function AdminUsers() {
               <tr key={u.id}>
                 <td>{u.name}</td>
                 <td>{u.email}</td>
-                <td>{u.role}</td>
+                <td>
+                  <span className="badge bg-secondary-subtle text-dark">{u.roleLabel}</span>
+                </td>
                 <td>
                   <div className="d-flex gap-1">
                     <button type="button" className="btn btn-sm btn-outline-dark" onClick={() => openModal(u)}>
-                      Sửa
+                      <i className="bi bi-pencil me-1" /> Sửa
                     </button>
                     <button type="button" className="btn btn-sm btn-outline-dark" onClick={() => toggleStatus(u)}>
-                      TT
+                      <i className="bi bi-toggle-on me-1" /> TT
                     </button>
                     <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => deleteUser(u.id)}>
-                      Xóa
+                      <i className="bi bi-trash me-1" /> Xóa
                     </button>
                   </div>
                 </td>

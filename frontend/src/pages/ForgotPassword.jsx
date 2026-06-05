@@ -17,7 +17,7 @@ export default function ForgotPassword() {
     try {
       await apiCall('/auth/forgot-password', 'POST', { email });
       setSent(true);
-      showToast('Yêu cầu đã được gửi. Kiểm tra console backend (demo) để lấy link reset.', 'success');
+      showToast('Yêu cầu đã được gửi. Vui lòng kiểm tra email của bạn.', 'success');
     } catch (err) {
       showToast(err.message || 'Không thể gửi yêu cầu.', 'danger');
     } finally {
@@ -39,7 +39,7 @@ export default function ForgotPassword() {
                   {!sent ? (
                     <form className="form-luxury" onSubmit={onSubmit}>
                       <p className="text-muted-soft mb-3">
-                        Nhập email của bạn. Chúng tôi sẽ gửi hướng dẫn đặt lại mật khẩu (demo: link sẽ được in ra console backend).
+                        Nhập email của bạn. Chúng tôi sẽ gửi link đặt lại mật khẩu đến hộp thư của bạn (kiểm tra cả Spam nếu không thấy).
                       </p>
                       <div className="mb-3">
                         <label className="form-label text-dark">Email</label>
@@ -56,11 +56,35 @@ export default function ForgotPassword() {
                       </button>
                     </form>
                   ) : (
-                    <div>
-                      <p className="text-success">Yêu cầu đã gửi thành công!</p>
-                      <p className="text-muted-soft">
-                        Kiểm tra console của backend để lấy link reset (demo). Sau đó dùng link đó để đặt mật khẩu mới.
+                    <div className="text-center">
+                      <div style={{ fontSize: '3rem', color: '#166534', marginBottom: '12px' }}>
+                        ✓
+                      </div>
+                      <h2 className="h4 mb-2 text-success">Yêu cầu đã gửi thành công!</h2>
+                      <p className="text-muted-soft mb-3">
+                        Nếu email của bạn tồn tại trong hệ thống, chúng tôi đã gửi email chứa link đặt lại mật khẩu.
                       </p>
+
+                      <div className="content-card bg-light p-3 mb-3 text-start" style={{ fontSize: '0.9rem' }}>
+                        <strong className="d-block mb-1">Lưu ý:</strong>
+                        <ul className="mb-0 ps-3">
+                          <li>Kiểm tra hộp thư đến (và cả thư mục <strong>Spam / Junk</strong>).</li>
+                          <li>Link đặt lại chỉ có hiệu lực trong <strong>1 giờ</strong>.</li>
+                          <li>Nếu không nhận được email, vui lòng thử lại hoặc liên hệ hỗ trợ.</li>
+                        </ul>
+                      </div>
+
+                      <div className="d-flex flex-column gap-2">
+                        <Link 
+                          to="/reset-password" 
+                          className="btn-luxury btn-luxury-primary w-100"
+                        >
+                          Tôi đã nhận email — Đặt lại mật khẩu
+                        </Link>
+                        <Link to="/login" className="btn-luxury btn-luxury-outline w-100">
+                          Quay lại trang đăng nhập
+                        </Link>
+                      </div>
                     </div>
                   )}
 
