@@ -110,7 +110,7 @@ public class AuthController {
 
         ApiResponse<Void> response = new ApiResponse<>(
                 HttpStatus.OK.value(),
-                "Nếu email tồn tại, hướng dẫn đặt lại mật khẩu đã được gửi (xem console backend cho demo)."
+                "Nếu email tồn tại, hướng dẫn đặt lại mật khẩu đã được gửi qua email."
         );
         return ResponseEntity.ok(response);
     }

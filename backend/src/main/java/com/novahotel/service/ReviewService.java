@@ -1,6 +1,8 @@
 package com.novahotel.service;
 
+import com.novahotel.model.Booking;
 import com.novahotel.model.Review;
+import com.novahotel.repository.BookingRepository;
 import com.novahotel.repository.ReviewRepository;
 import com.novahotel.exception.BadRequestException;
 import com.novahotel.exception.ResourceNotFoundException;
@@ -22,6 +24,9 @@ public class ReviewService {
     @Autowired
     private ReviewRepository reviewRepository;
 
+    @Autowired
+    private BookingRepository bookingRepository;
+
     public List<Review> getAllReviews() {
         return reviewRepository.findAll();
     }
@@ -36,6 +41,20 @@ public class ReviewService {
         if (review.getRating() < 1 || review.getRating() > 5) {
             throw new BadRequestException("Điểm đánh giá phải từ 1 đến 5");
         }
+
+        // Chỉ cho phép đánh giá nếu user đã hoàn thành (completed) ít nhất 1 booking cho phòng này
+        List<Booking> userBookings = bookingRepository.findByUserId(userId);
+        boolean hasCompletedBookingForRoom = userBookings.stream()
+                .anyMatch(b -> {
+                    String bRoom = b.getRoomId() != null ? b.getRoomId() : b.getRoomNumber();
+                    return review.getRoomId().equals(bRoom) &&
+                           "completed".equalsIgnoreCase(b.getStatus());
+                });
+
+        if (!hasCompletedBookingForRoom) {
+            throw new BadRequestException("Bạn chỉ có thể gửi đánh giá sau khi đã hoàn thành (trạng thái completed) ít nhất một đặt phòng cho phòng này.");
+        }
+
         review.setUserId(userId);
         review.setCreatedAt(new Date());
         if (review.getReviewId() == null) {

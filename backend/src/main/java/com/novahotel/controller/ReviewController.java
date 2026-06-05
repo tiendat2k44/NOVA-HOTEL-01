@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -44,6 +45,7 @@ public class ReviewController {
      * @return Review object sau khi tạo
      */
     @PostMapping
+    @PreAuthorize("hasAnyRole('USER','ADMIN','RECEPTIONIST')")
     public ResponseEntity<ApiResponse<Review>> createReview(
             @RequestBody Review review,
             Authentication authentication) {

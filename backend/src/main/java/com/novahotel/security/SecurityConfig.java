@@ -76,25 +76,29 @@ public class SecurityConfig {
                                 "/api/rooms",
                                 "/api/rooms/**",
                                 "/api/rooms/available",
-                                "/api/rooms/search"
+                                "/api/rooms/search",
+                                // Uploaded static images (public for room display to all users/guests)
+                                "/uploads/**"
                         ).permitAll()
                         // Admin-only room management
                         .requestMatchers(HttpMethod.POST, "/api/rooms/admin", "/api/rooms/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/rooms/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/rooms/admin/**").hasRole("ADMIN")
-                        // User profile endpoints (USER/ADMIN)
-                        .requestMatchers(HttpMethod.GET, "/api/users/profile").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/users/profile").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/users/profile").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/users/change-password").hasAnyRole("USER", "ADMIN")
+                        // Admin image uploads for rooms
+                        .requestMatchers(HttpMethod.POST, "/api/uploads/**").hasRole("ADMIN")
+                        // User profile endpoints (USER/ADMIN/RECEPTIONIST)
+                        .requestMatchers(HttpMethod.GET, "/api/users/profile").hasAnyRole("USER", "ADMIN", "RECEPTIONIST")
+                        .requestMatchers(HttpMethod.PUT, "/api/users/profile").hasAnyRole("USER", "ADMIN", "RECEPTIONIST")
+                        .requestMatchers(HttpMethod.DELETE, "/api/users/profile").hasAnyRole("USER", "ADMIN", "RECEPTIONIST")
+                        .requestMatchers(HttpMethod.PUT, "/api/users/change-password").hasAnyRole("USER", "ADMIN", "RECEPTIONIST")
                         // Admin-only user management
                         .requestMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/users/admin", "/api/users/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/users/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/users/admin/**").hasRole("ADMIN")
                         // Booking endpoints
-                        .requestMatchers(HttpMethod.GET, "/api/bookings").hasRole("ADMIN")
-                        .requestMatchers("/api/bookings/my-bookings").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/bookings").hasAnyRole("ADMIN", "RECEPTIONIST")
+                        .requestMatchers("/api/bookings/my-bookings").hasAnyRole("USER", "ADMIN", "RECEPTIONIST")
                         // Swagger/OpenAPI endpoints
                         .requestMatchers(
                                 "/swagger-ui/**",

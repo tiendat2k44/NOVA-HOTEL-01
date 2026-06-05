@@ -1,7 +1,10 @@
 package com.novahotel.config;
 
+import java.nio.file.Paths;
+
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
@@ -45,5 +48,18 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowCredentials(true)
                 // Thời gian cache CORS preflight response (giây)
                 .maxAge(3600);
+    }
+
+    /**
+     * Cấu hình Resource Handler để phục vụ file ảnh đã upload (từ /uploads/**)
+     * Ví dụ: ảnh phòng được lưu tại ./uploads/rooms/xxx.jpg -> truy cập qua /uploads/rooms/xxx.jpg
+     */
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        // Sử dụng thư mục uploads tương đối so với working directory (backend/)
+        String uploadLocation = Paths.get("uploads").toAbsolutePath().toUri().toString();
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations(uploadLocation)
+                .setCachePeriod(3600); // cache 1h
     }
 }

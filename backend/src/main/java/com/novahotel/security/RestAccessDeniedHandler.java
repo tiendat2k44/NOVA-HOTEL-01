@@ -15,6 +15,7 @@ public class RestAccessDeniedHandler implements AccessDeniedHandler {
                        AccessDeniedException accessDeniedException) throws IOException {
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         response.setContentType("application/json");
-        response.getWriter().write("{\"status\":403,\"message\":\"Forbidden\"}");
+        // Trả message rõ ràng hơn để frontend toast không chỉ "Forbidden"
+        response.getWriter().write("{\"status\":403,\"message\":\"Bạn không có quyền truy cập (cần quyền ADMIN).\"}");
     }
 }

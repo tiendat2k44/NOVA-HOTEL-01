@@ -20,12 +20,12 @@ public class Room {
     private List<String> facilities;
     private List<String> images;
     private String description;
-    private int maxGuests;
-    private int floor;
+    private Integer maxGuests;
+    private Integer floor;
 
     public Room() {}
 
-    public Room(String id, String roomId, String roomNumber, String name, String roomType, Price price, String status, List<String> facilities, List<String> images, String description, int maxGuests, int floor) {
+    public Room(String id, String roomId, String roomNumber, String name, String roomType, Price price, String status, List<String> facilities, List<String> images, String description, Integer maxGuests, Integer floor) {
         this.id = id;
         this.roomId = roomId;
         this.roomNumber = roomNumber;
@@ -70,11 +70,11 @@ public class Room {
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
 
-    public int getMaxGuests() { return maxGuests; }
-    public void setMaxGuests(int maxGuests) { this.maxGuests = maxGuests; }
+    public Integer getMaxGuests() { return maxGuests; }
+    public void setMaxGuests(Integer maxGuests) { this.maxGuests = maxGuests; }
 
-    public int getFloor() { return floor; }
-    public void setFloor(int floor) { this.floor = floor; }
+    public Integer getFloor() { return floor; }
+    public void setFloor(Integer floor) { this.floor = floor; }
 
     // Inner classes
     public static class Price {

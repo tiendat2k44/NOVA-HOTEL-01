@@ -28,10 +28,15 @@ public class Booking {
     private String roomName;
     private String roomNumber;
 
+    // Contact info (lưu riêng để gửi email, hiển thị, thanh toán)
+    private String contactEmail;
+    private String contactPhone;
+
     public Booking() {}
 
     public Booking(String id, String bookingId, String userId, String roomId, Date checkIn, Date checkOut, String status, double totalPrice, String specialRequests, Date createdAt,
-                   String bookingCode, String guestName, String roomName, String roomNumber) {
+                   String bookingCode, String guestName, String roomName, String roomNumber,
+                   String contactEmail, String contactPhone) {
         this.id = id;
         this.bookingId = bookingId;
         this.userId = userId;
@@ -46,6 +51,8 @@ public class Booking {
         this.guestName = guestName;
         this.roomName = roomName;
         this.roomNumber = roomNumber;
+        this.contactEmail = contactEmail;
+        this.contactPhone = contactPhone;
     }
 
     public String getId() { return id; }
@@ -89,4 +96,10 @@ public class Booking {
 
     public String getRoomNumber() { return roomNumber; }
     public void setRoomNumber(String roomNumber) { this.roomNumber = roomNumber; }
+
+    public String getContactEmail() { return contactEmail; }
+    public void setContactEmail(String contactEmail) { this.contactEmail = contactEmail; }
+
+    public String getContactPhone() { return contactPhone; }
+    public void setContactPhone(String contactPhone) { this.contactPhone = contactPhone; }
 }

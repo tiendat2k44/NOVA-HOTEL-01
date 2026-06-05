@@ -11,6 +11,9 @@ public final class RoleUtils {
         if (value.contains("admin")) {
             return "ROLE_ADMIN";
         }
+        if (value.contains("receptionist") || value.contains("lễ tân") || value.contains("le tan")) {
+            return "ROLE_RECEPTIONIST";
+        }
         return "ROLE_USER";
     }
 }

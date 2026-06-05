@@ -49,6 +49,9 @@ public class UserService {
     @Autowired
     private AuthenticationManager authenticationManager;
 
+    @Autowired
+    private EmailService emailService;
+
     @Value("${google.client-id:}")
     private String googleClientId;
 
@@ -254,7 +257,7 @@ public class UserService {
 
     /**
      * Bắt đầu quy trình quên mật khẩu.
-     * Tạo token reset, lưu vào user, log link demo (thay vì gửi email thật).
+     * Tạo token reset, lưu vào user, và gửi email thật (nếu cấu hình mail).
      */
     public void initiatePasswordReset(String email) {
         if (email == null || email.isBlank()) {
@@ -263,6 +266,7 @@ public class UserService {
         Optional<User> opt = userRepository.findByEmail(email.trim().toLowerCase());
         if (opt.isEmpty()) {
             // Không tiết lộ user có tồn tại hay không (bảo mật)
+            log.info("Forgot password requested for non-existing email: {}", email);
             return;
         }
         User user = opt.get();
@@ -271,13 +275,20 @@ public class UserService {
         user.setResetTokenExpiry(new Date(System.currentTimeMillis() + 60 * 60 * 1000)); // 1 giờ
         userRepository.save(user);
 
-        // DEMO: In ra console để dev/test dễ dàng. Thực tế nên gửi email.
         String resetLink = "http://localhost:5173/reset-password?token=" + token;
-        System.out.println("\n=== [DEMO] PASSWORD RESET ===");
-        System.out.println("User: " + email);
-        System.out.println("Reset link: " + resetLink);
-        System.out.println("Token expires in 1 hour.");
-        System.out.println("=============================\n");
+
+        try {
+            emailService.sendPasswordResetEmail(email, resetLink);
+            log.info("[PasswordReset] Email reset sent to {}", email);
+        } catch (Exception e) {
+            log.error("[PasswordReset] Failed to send email to {}: {}", email, e.getMessage());
+            // Fallback: vẫn log ra console để dev có thể test nếu mail fail
+            System.out.println("\n=== [FALLBACK] PASSWORD RESET LINK ===");
+            System.out.println("User: " + email);
+            System.out.println("Reset link: " + resetLink);
+            System.out.println("Token expires in 1 hour.");
+            System.out.println("======================================\n");
+        }
     }
 
     /**

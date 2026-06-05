@@ -4,6 +4,10 @@ import com.novahotel.dto.ApiResponse;
 import com.novahotel.dto.BookingRequest;
 import com.novahotel.model.Booking;
 import com.novahotel.service.BookingService;
+import com.novahotel.service.VietQRService;
+
+import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +42,9 @@ public class BookingController {
     @Autowired
     private BookingService bookingService;
 
+    @Autowired
+    private VietQRService vietQRService;
+
     /**
      * Đặt phòng (tạo booking mới)
      * TRUY VẤN CỐT LÕI #2: Đặt phòng (booking)
@@ -59,7 +66,7 @@ public class BookingController {
      * @return Booking object sau khi tạo
      */
     @PostMapping
-        @PreAuthorize("hasAnyRole('USER','ADMIN')")
+        @PreAuthorize("hasAnyRole('USER','ADMIN','RECEPTIONIST')")
     public ResponseEntity<ApiResponse<Booking>> createBooking(
             @RequestBody BookingRequest bookingRequest,
             Authentication authentication) {
@@ -85,7 +92,7 @@ public class BookingController {
          * @return Page<Booking>
          */
         @GetMapping
-        @PreAuthorize("hasRole('ADMIN')")
+        @PreAuthorize("hasAnyRole('ADMIN','RECEPTIONIST')")
         public ResponseEntity<ApiResponse<Page<Booking>>> getAllBookings(
                         @RequestParam(defaultValue = "0") Integer page,
                         @RequestParam(defaultValue = "10") Integer size) {
@@ -112,7 +119,7 @@ public class BookingController {
      * @return Page<Booking> - danh sách booking của khách
      */
     @GetMapping("/my-bookings")
-        @PreAuthorize("hasAnyRole('USER','ADMIN')")
+        @PreAuthorize("hasAnyRole('USER','ADMIN','RECEPTIONIST')")
     public ResponseEntity<ApiResponse<Page<Booking>>> getMyBookings(
             Authentication authentication,
             @RequestParam(defaultValue = "0") Integer page,
@@ -141,15 +148,15 @@ public class BookingController {
      * @return Booking object
      */
     @GetMapping("/{bookingId}")
-        @PreAuthorize("hasAnyRole('USER','ADMIN')")
+        @PreAuthorize("hasAnyRole('USER','ADMIN','RECEPTIONIST')")
     public ResponseEntity<ApiResponse<Booking>> getBookingById(
             @PathVariable String bookingId,
             Authentication authentication) {
         log.info("Get booking: {} for user: {}", bookingId, authentication.getPrincipal());
         
         String userId = (String) authentication.getPrincipal();
-        boolean isAdmin = hasAdminRole(authentication);
-        Booking booking = bookingService.getBookingById(bookingId, userId, isAdmin);
+        boolean isStaff = hasStaffRole(authentication);
+        Booking booking = bookingService.getBookingById(bookingId, userId, isStaff);
         
         ApiResponse<Booking> response = new ApiResponse<>(
                 HttpStatus.OK.value(),
@@ -157,6 +164,51 @@ public class BookingController {
                 booking
         );
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Lấy QR VietQR để thanh toán (checkout / chuyển khoản).
+     * Dùng cho khách hàng sau khi đặt phòng hoặc khi booking confirmed.
+     *
+     * GET /api/bookings/{bookingId}/payment-qr?bank=VCB
+     * bank: VCB | MB | TCB | ACB | VPB | BIDV (tùy chọn)
+     */
+    @GetMapping("/{bookingId}/payment-qr")
+    @PreAuthorize("hasAnyRole('USER','ADMIN','RECEPTIONIST')")
+    public ResponseEntity<ApiResponse<VietQRService.PaymentQRInfo>> getPaymentQR(
+            @PathVariable String bookingId,
+            @RequestParam(required = false) String bank,
+            Authentication authentication) {
+        log.info("Get payment QR for booking: {} (bank={}) by user: {}", bookingId, bank, authentication.getPrincipal());
+
+        String userId = (String) authentication.getPrincipal();
+        boolean isStaff = hasStaffRole(authentication);
+        VietQRService.PaymentQRInfo qrInfo = bookingService.getPaymentQRInfo(bookingId, userId, isStaff, bank);
+
+        ApiResponse<VietQRService.PaymentQRInfo> response = new ApiResponse<>(
+                HttpStatus.OK.value(),
+                "QR thanh toán được tạo thành công",
+                qrInfo
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Lấy danh sách ngân hàng hỗ trợ VietQR (dùng cho dropdown chọn ngân hàng).
+     * GET /api/bookings/banks
+     */
+    @GetMapping("/banks")
+    @PreAuthorize("hasAnyRole('USER','ADMIN','RECEPTIONIST')")
+    public ResponseEntity<ApiResponse<List<Map<String, String>>>> getSupportedBanks() {
+        List<Map<String, String>> banks = (vietQRService != null)
+                ? vietQRService.getSupportedBanks()
+                : List.of();
+        ApiResponse<List<Map<String, String>>> resp = new ApiResponse<>(
+                HttpStatus.OK.value(),
+                "Danh sách ngân hàng hỗ trợ VietQR",
+                banks
+        );
+        return ResponseEntity.ok(resp);
     }
 
     /**
@@ -169,15 +221,15 @@ public class BookingController {
      * @return Success message
      */
     @DeleteMapping("/{bookingId}")
-        @PreAuthorize("hasAnyRole('USER','ADMIN')")
+        @PreAuthorize("hasAnyRole('USER','ADMIN','RECEPTIONIST')")
     public ResponseEntity<ApiResponse<Void>> cancelBooking(
             @PathVariable String bookingId,
             Authentication authentication) {
         log.info("Cancel booking: {} for user: {}", bookingId, authentication.getPrincipal());
         
         String userId = (String) authentication.getPrincipal();
-        boolean isAdmin = hasAdminRole(authentication);
-        bookingService.cancelBooking(bookingId, userId, isAdmin);
+        boolean isStaff = hasStaffRole(authentication);
+        bookingService.cancelBooking(bookingId, userId, isStaff);
         
         ApiResponse<Void> response = new ApiResponse<>(
                 HttpStatus.OK.value(),
@@ -197,7 +249,7 @@ public class BookingController {
      * @return Booking object sau khi cập nhật
      */
     @PutMapping("/{bookingId}")
-        @PreAuthorize("hasAnyRole('USER','ADMIN')")
+        @PreAuthorize("hasAnyRole('USER','ADMIN','RECEPTIONIST')")
     public ResponseEntity<ApiResponse<Booking>> updateBooking(
             @PathVariable String bookingId,
             @RequestBody BookingRequest bookingRequest,
@@ -205,8 +257,8 @@ public class BookingController {
         log.info("Update booking: {} for user: {}", bookingId, authentication.getPrincipal());
         
         String userId = (String) authentication.getPrincipal();
-        boolean isAdmin = hasAdminRole(authentication);
-        Booking updatedBooking = bookingService.updateBooking(bookingId, bookingRequest, userId, isAdmin);
+        boolean isStaff = hasStaffRole(authentication);
+        Booking updatedBooking = bookingService.updateBooking(bookingId, bookingRequest, userId, isStaff);
         
         ApiResponse<Booking> response = new ApiResponse<>(
                 HttpStatus.OK.value(),
@@ -216,9 +268,12 @@ public class BookingController {
         return ResponseEntity.ok(response);
     }
 
-    private boolean hasAdminRole(Authentication authentication) {
+    private boolean hasStaffRole(Authentication authentication) {
         if (authentication == null || authentication.getAuthorities() == null) return false;
         return authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority() != null && a.getAuthority().toUpperCase().contains("ADMIN"));
+                .anyMatch(a -> {
+                    String auth = a.getAuthority() != null ? a.getAuthority().toUpperCase() : "";
+                    return auth.contains("ADMIN") || auth.contains("RECEPTIONIST");
+                });
     }
 }

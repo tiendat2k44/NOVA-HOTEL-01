@@ -64,7 +64,7 @@ public class RoomService {
 
         List<Room> list = getAvailableRooms(filter.getCheckInDate(), filter.getCheckOutDate()).stream()
                 .filter(room -> filter.getRoomType() == null || filter.getRoomType().isBlank() || filter.getRoomType().equalsIgnoreCase(room.getRoomType()))
-                .filter(room -> filter.getNumberOfGuests() == null || room.getMaxGuests() >= filter.getNumberOfGuests())
+                .filter(room -> filter.getNumberOfGuests() == null || (room.getMaxGuests() != null && room.getMaxGuests() >= filter.getNumberOfGuests()))
                 .filter(room -> filter.getMinPrice() == null || getBasePrice(room) >= filter.getMinPrice())
                 .filter(room -> filter.getMaxPrice() == null || getBasePrice(room) <= filter.getMaxPrice())
                 .collect(Collectors.toList());
@@ -124,8 +124,11 @@ public class RoomService {
         if (payload.getDescription() != null) {
             existing.setDescription(payload.getDescription());
         }
-        if (payload.getMaxGuests() > 0) {
+        if (payload.getMaxGuests() != null) {
             existing.setMaxGuests(payload.getMaxGuests());
+        }
+        if (payload.getFloor() != null) {
+            existing.setFloor(payload.getFloor());
         }
         return roomRepository.save(existing);
     }
@@ -145,7 +148,7 @@ public class RoomService {
                 .orElseThrow(() -> new ResourceNotFoundException("Phòng không tìm thấy"));
     }
 
-    private boolean isRoomAvailable(Room room, LocalDate checkIn, LocalDate checkOut) {
+    public boolean isRoomAvailable(Room room, LocalDate checkIn, LocalDate checkOut) {
         // Ưu tiên business key roomId (RMxxx) để khớp với dữ liệu booking mẫu và tạo mới
         String roomKey = room.getRoomId() != null ? room.getRoomId() : room.getId();
         if (roomKey == null) {
