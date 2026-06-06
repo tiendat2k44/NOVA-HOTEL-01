@@ -99,6 +99,27 @@ public class BookingController {
                 log.info("Get all bookings - page: {}, size: {}", page, size);
                 Page<Booking> bookings = bookingService.getAllBookings(page, size);
 
+                // Safety net: force the 3 important display fields (Mã, Khách, Phòng) on the returned content
+                // This guarantees the columns show data even if service enrichment is not active in current .class
+                if (bookings != null && bookings.getContent() != null) {
+                        for (Booking b : bookings.getContent()) {
+                                if (b.getBookingCode() == null || b.getBookingCode().isBlank()) {
+                                        String fb = (b.getBookingId() != null && !b.getBookingId().isBlank()) ? b.getBookingId()
+                                                        : (b.getId() != null ? "BK-" + b.getId().substring(0, Math.min(8, b.getId().length())) : "BK-UNK");
+                                        b.setBookingCode(fb);
+                                }
+                                if (b.getGuestName() == null || b.getGuestName().isBlank()) {
+                                        b.setGuestName("Khách hàng");
+                                }
+                                if (b.getRoomName() == null || b.getRoomName().isBlank()) {
+                                        b.setRoomName(b.getRoomId() != null ? "Phòng " + b.getRoomId() : "Phòng không xác định");
+                                }
+                                if (b.getRoomNumber() == null || b.getRoomNumber().isBlank() && b.getRoomId() != null) {
+                                        b.setRoomNumber(b.getRoomId());
+                                }
+                        }
+                }
+
                 ApiResponse<Page<Booking>> response = new ApiResponse<>(
                                 HttpStatus.OK.value(),
                                 "Bookings retrieved successfully",
@@ -129,6 +150,23 @@ public class BookingController {
         
         String userId = (String) authentication.getPrincipal();
         Page<Booking> bookings = bookingService.getUserBookings(userId, page, size);
+
+        // Safety net for my-bookings too
+        if (bookings != null && bookings.getContent() != null) {
+                for (Booking b : bookings.getContent()) {
+                        if (b.getBookingCode() == null || b.getBookingCode().isBlank()) {
+                                String fb = (b.getBookingId() != null && !b.getBookingId().isBlank()) ? b.getBookingId()
+                                                : (b.getId() != null ? "BK-" + b.getId().substring(0, Math.min(8, b.getId().length())) : "BK-UNK");
+                                b.setBookingCode(fb);
+                        }
+                        if (b.getGuestName() == null || b.getGuestName().isBlank()) {
+                                b.setGuestName("Khách hàng");
+                        }
+                        if (b.getRoomName() == null || b.getRoomName().isBlank()) {
+                                b.setRoomName(b.getRoomId() != null ? "Phòng " + b.getRoomId() : "Phòng không xác định");
+                        }
+                }
+        }
         
         ApiResponse<Page<Booking>> response = new ApiResponse<>(
                 HttpStatus.OK.value(),

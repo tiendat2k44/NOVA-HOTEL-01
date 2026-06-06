@@ -135,7 +135,9 @@ public class VietQRService {
         private String accountNo;
         private String accountName;
         private String bankName;
-        private long amount;
+        private long amount;                 // Tổng số tiền khách phải chuyển (bao gồm phụ phí QR nếu có)
+        private long roomAmount;             // Tiền phòng gốc
+        private long surchargeAmount;        // Phụ phí QR code
         private String description;
         private String bookingCode;
         private String instructions;
@@ -159,6 +161,12 @@ public class VietQRService {
 
         public long getAmount() { return amount; }
         public void setAmount(long amount) { this.amount = amount; }
+
+        public long getRoomAmount() { return roomAmount; }
+        public void setRoomAmount(long roomAmount) { this.roomAmount = roomAmount; }
+
+        public long getSurchargeAmount() { return surchargeAmount; }
+        public void setSurchargeAmount(long surchargeAmount) { this.surchargeAmount = surchargeAmount; }
 
         public String getDescription() { return description; }
         public void setDescription(String description) { this.description = description; }

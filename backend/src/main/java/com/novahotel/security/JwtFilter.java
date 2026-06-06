@@ -65,6 +65,21 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
+
+        // Skip JWT processing entirely for public authentication endpoints.
+        // This prevents stale tokens from triggering AuthenticationEntryPoint on /auth/google, login, register, etc.
+        String requestPath = request.getRequestURI();
+        if (requestPath != null && (
+                requestPath.endsWith("/auth/login") ||
+                requestPath.endsWith("/auth/register") ||
+                requestPath.endsWith("/auth/google") ||
+                requestPath.endsWith("/auth/forgot-password") ||
+                requestPath.endsWith("/auth/reset-password")
+        )) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         try {
             // Lấy Authorization header
             String authorizationHeader = request.getHeader("Authorization");

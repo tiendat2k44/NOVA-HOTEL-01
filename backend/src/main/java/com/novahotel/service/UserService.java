@@ -331,48 +331,44 @@ public class UserService {
         if (credential == null || credential.isBlank()) {
             throw new BadRequestException("Thiếu Google credential");
         }
-        if (googleClientId == null || googleClientId.isBlank() || googleClientId.startsWith("your-")) {
-            // Cho phép dev/test mà không cần key thật (không verify chặt)
-            log.warn("Google client ID chưa cấu hình. Đang dùng chế độ DEV (không verify token đầy đủ).");
-        } else {
-            try {
-                GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
-                        new NetHttpTransport(),
-                        new GsonFactory()
-                )
-                        .setAudience(java.util.Collections.singletonList(googleClientId))
-                        .build();
 
-                GoogleIdToken idToken = verifier.verify(credential);
-                if (idToken == null) {
-                    throw new UnauthorizedException("Google token không hợp lệ");
-                }
-                GoogleIdToken.Payload payload = idToken.getPayload();
-                String email = payload.getEmail();
-                String name = (String) payload.get("name");
-                // Use verified email
-                return loginOrRegisterWithGoogle(email, name != null ? name : email.split("@")[0]);
-            } catch (Exception ex) {
-                log.error("Google token verify failed", ex);
-                throw new UnauthorizedException("Không thể xác thực Google: " + ex.getMessage());
-            }
+        // Bắt buộc phải có client ID thật từ Google Cloud Console.
+        // Không hỗ trợ chế độ demo/fake nữa.
+        if (googleClientId == null || googleClientId.isBlank() || googleClientId.startsWith("your-")) {
+            log.error("Google login bị gọi nhưng google.client-id chưa được cấu hình đúng cách.");
+            throw new BadRequestException(
+                "Google login chưa được cấu hình. " +
+                "Vui lòng thiết lập 'google.client-id' trong application.properties " +
+                "bằng Client ID thật (dạng xxxxx.apps.googleusercontent.com) từ Google Cloud Console."
+            );
         }
 
-        // Dev fallback: parse payload cơ bản (không an toàn production)
+        // Luôn verify token thật với Google
         try {
-            String[] parts = credential.split("\\.");
-            if (parts.length >= 2) {
-                String payloadJson = new String(java.util.Base64.getUrlDecoder().decode(parts[1]));
-                // crude parse
-                String email = extractJsonField(payloadJson, "email");
-                String name = extractJsonField(payloadJson, "name");
-                if (email != null) {
-                    return loginOrRegisterWithGoogle(email, name != null ? name : email.split("@")[0]);
-                }
-            }
-        } catch (Exception ignored) {}
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
+                    new NetHttpTransport(),
+                    new GsonFactory()
+            )
+                    .setAudience(java.util.Collections.singletonList(googleClientId))
+                    .build();
 
-        throw new BadRequestException("Google credential không hợp lệ");
+            GoogleIdToken idToken = verifier.verify(credential);
+            if (idToken == null) {
+                throw new UnauthorizedException("Google token không hợp lệ hoặc đã hết hạn");
+            }
+            GoogleIdToken.Payload payload = idToken.getPayload();
+            String email = payload.getEmail();
+            String name = (String) payload.get("name");
+
+            if (email == null || email.isBlank()) {
+                throw new UnauthorizedException("Không lấy được email từ Google token");
+            }
+
+            return loginOrRegisterWithGoogle(email, name != null ? name : email.split("@")[0]);
+        } catch (Exception ex) {
+            log.error("Google token verify failed", ex);
+            throw new UnauthorizedException("Không thể xác thực Google: " + ex.getMessage());
+        }
     }
 
     private AuthResponse loginOrRegisterWithGoogle(String email, String fullName) {
@@ -401,18 +397,5 @@ public class UserService {
         String normalizedRole = RoleUtils.normalizeRole(user.getRole());
         String token = jwtConfig.generateToken(user.getId(), normalizedRole);
         return new AuthResponse(user.getId(), user.getEmail(), user.getFullName(), normalizedRole, token);
-    }
-
-    private String extractJsonField(String json, String field) {
-        try {
-            String key = "\"" + field + "\":\"";
-            int start = json.indexOf(key);
-            if (start < 0) return null;
-            start += key.length();
-            int end = json.indexOf("\"", start);
-            return end > start ? json.substring(start, end) : null;
-        } catch (Exception e) {
-            return null;
-        }
     }
 }

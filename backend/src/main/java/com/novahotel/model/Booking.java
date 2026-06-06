@@ -85,13 +85,31 @@ public class Booking {
     public Date getCreatedAt() { return createdAt; }
     public void setCreatedAt(Date createdAt) { this.createdAt = createdAt; }
 
-    public String getBookingCode() { return bookingCode; }
+    public String getBookingCode() {
+        if (bookingCode != null && !bookingCode.isBlank()) return bookingCode;
+        if (bookingId != null && !bookingId.isBlank()) return bookingId;
+        if (id != null && !id.isBlank()) return "BK-" + id.substring(0, Math.min(8, id.length()));
+        return "BK-UNK";
+    }
     public void setBookingCode(String bookingCode) { this.bookingCode = bookingCode; }
 
-    public String getGuestName() { return guestName; }
+    /**
+     * Convenience for frontend code that expects "code" (legacy).
+     * Returns bookingCode if present, else bookingId.
+     * Never returns null/blank for UI tables.
+     */
+    public String getCode() {
+        return getBookingCode();  // reuse the logic
+    }
+
+    public String getGuestName() { 
+        return (guestName != null && !guestName.isBlank()) ? guestName : "Khách hàng"; 
+    }
     public void setGuestName(String guestName) { this.guestName = guestName; }
 
-    public String getRoomName() { return roomName; }
+    public String getRoomName() { 
+        return (roomName != null && !roomName.isBlank()) ? roomName : "Phòng không xác định"; 
+    }
     public void setRoomName(String roomName) { this.roomName = roomName; }
 
     public String getRoomNumber() { return roomNumber; }

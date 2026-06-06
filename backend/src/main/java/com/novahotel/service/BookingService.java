@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -19,10 +20,11 @@ import com.novahotel.exception.ResourceNotFoundException;
 import com.novahotel.exception.UnauthorizedException;
 import com.novahotel.model.Booking;
 import com.novahotel.model.Room;
+import com.novahotel.model.User;
 import com.novahotel.repository.BookingRepository;
 import com.novahotel.repository.RoomRepository;
+import com.novahotel.repository.UserRepository;
 
-import org.springframework.beans.factory.annotation.Autowired; // ensure
 import java.time.format.DateTimeFormatter;
 
 @Service
@@ -37,6 +39,9 @@ public class BookingService {
     private RoomRepository roomRepository;
 
     @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
     private RoomService roomService;
 
     @Autowired
@@ -45,37 +50,142 @@ public class BookingService {
     @Autowired
     private VietQRService vietQRService;
 
+    @Value("${hotel.qr-surcharge:0}")
+    private double qrSurcharge;
+
     public Page<Booking> getAllBookings(int page, int size) {
         int safePage = Math.max(0, page);
         int safeSize = Math.max(1, size);
         List<Booking> all = bookingRepository.findAll();
+
+        log.info("[BookingService] getAllBookings - loaded {} bookings, starting enrichment for Mã/Khách/Phòng", all.size());
+
+        // Enrich toàn bộ danh sách trước (data nhỏ, đảm bảo nhất quán)
+        // Mục tiêu: luôn có Mã (bookingCode/code), Khách (guestName), Phòng (roomName)
         all.forEach(this::enrichIfNeeded);
+
+        // Double force cho 3 cột quan trọng (Mã / Khách / Phòng) — an toàn cho UI
+        int enrichedCount = 0;
+        for (Booking b : all) {
+            boolean changed = false;
+            // Mã
+            if (b.getBookingCode() == null || b.getBookingCode().isBlank()) {
+                String fallback = (b.getBookingId() != null && !b.getBookingId().isBlank()) ? b.getBookingId()
+                        : (b.getId() != null ? "BK-" + b.getId().substring(0, Math.min(8, b.getId().length())) : "BK-UNK");
+                b.setBookingCode(fallback);
+                changed = true;
+            }
+            // Tên người đặt (Khách)
+            if (b.getGuestName() == null || b.getGuestName().isBlank()) {
+                b.setGuestName("Khách hàng");
+                changed = true;
+            }
+            // Tên phòng
+            if (b.getRoomName() == null || b.getRoomName().isBlank()) {
+                b.setRoomName(b.getRoomId() != null ? "Phòng " + b.getRoomId() : "Phòng không xác định");
+                changed = true;
+            }
+            if (b.getRoomNumber() == null || b.getRoomNumber().isBlank()) {
+                b.setRoomNumber(b.getRoomId() != null ? b.getRoomId() : "");
+                changed = true;
+            }
+            if (changed) enrichedCount++;
+        }
+
+        log.info("[BookingService] getAllBookings - enrichment complete, {} items had fields populated (fallbacks or lookup)", enrichedCount);
+
+        // Sau đó mới slice cho phân trang
         int start = Math.min(safePage * safeSize, all.size());
         int end = Math.min(start + safeSize, all.size());
         List<Booking> pageContent = all.subList(start, end);
+
         return new PageImpl<>(pageContent, PageRequest.of(safePage, safeSize), all.size());
     }
 
+    /**
+     * Enrich booking with denormalized display fields (roomName, guestName, bookingCode).
+     * This is critical because the list APIs return Booking directly to frontend,
+     * and frontend expects roomName, guestName, bookingCode/code for tables (AdminBookings, Dashboard...).
+     * We do runtime lookup for old/sample data that only stored IDs.
+     */
     private void enrichIfNeeded(Booking b) {
         if (b == null) return;
-        // Fallback code
+
+        // === bookingCode / bookingId fallback (for display as "Mã") ===
         if (b.getBookingCode() == null || b.getBookingCode().isBlank()) {
-            b.setBookingCode( b.getBookingId() != null ? b.getBookingId() : (b.getId() != null ? "BK-" + b.getId().substring(0, 6) : "BK-UNK") );
+            String code = b.getBookingId();
+            if (code == null || code.isBlank()) {
+                code = (b.getId() != null ? "BK-" + b.getId().substring(0, Math.min(8, b.getId().length())) : "BK-UNK");
+            }
+            b.setBookingCode(code);
         }
         if (b.getBookingId() == null || b.getBookingId().isBlank()) {
             b.setBookingId(b.getBookingCode());
         }
-        // Enrich roomName if missing (for imported sample data)
-        if ((b.getRoomName() == null || b.getRoomName().isBlank()) && b.getRoomId() != null) {
-            try {
-                Room r = roomRepository.findById(b.getRoomId())
-                        .or(() -> roomRepository.findByRoomId(b.getRoomId()))
-                        .orElse(null);
-                if (r != null) {
-                    b.setRoomName(r.getName());
-                    if (b.getRoomNumber() == null) b.setRoomNumber(r.getRoomNumber() != null ? r.getRoomNumber() : r.getRoomId());
+
+        // === Room name / number enrichment (tên phòng được đặt) ===
+        // Luôn cố gắng điền roomName + roomNumber nếu thiếu (hỗ trợ data cũ / import)
+        if (b.getRoomId() != null) {
+            boolean needRoomName = (b.getRoomName() == null || b.getRoomName().isBlank());
+            boolean needRoomNumber = (b.getRoomNumber() == null || b.getRoomNumber().isBlank());
+
+            if (needRoomName || needRoomNumber) {
+                try {
+                    Room r = roomRepository.findById(b.getRoomId())
+                            .or(() -> roomRepository.findByRoomId(b.getRoomId()))
+                            .orElse(null);
+                    if (r != null) {
+                        if (needRoomName) {
+                            b.setRoomName(r.getName() != null && !r.getName().isBlank() ? r.getName() : "Phòng " + b.getRoomId());
+                        }
+                        if (needRoomNumber) {
+                            String rn = r.getRoomNumber();
+                            b.setRoomNumber(rn != null && !rn.isBlank() ? rn : (r.getRoomId() != null ? r.getRoomId() : b.getRoomId()));
+                        }
+                    } else {
+                        // Fallback rõ ràng
+                        if (needRoomName) {
+                            b.setRoomName("Phòng " + b.getRoomId());
+                        }
+                        if (needRoomNumber) {
+                            b.setRoomNumber(b.getRoomId());
+                        }
+                    }
+                } catch (Exception ignored) {
+                    // Đảm bảo không bao giờ null
+                    if (needRoomName && (b.getRoomName() == null || b.getRoomName().isBlank())) {
+                        b.setRoomName("Phòng " + b.getRoomId());
+                    }
+                    if (needRoomNumber && (b.getRoomNumber() == null || b.getRoomNumber().isBlank())) {
+                        b.setRoomNumber(b.getRoomId());
+                    }
                 }
-            } catch (Exception ignored) {}
+            }
+        } else {
+            if (b.getRoomName() == null || b.getRoomName().isBlank()) {
+                b.setRoomName("Phòng không xác định");
+            }
+        }
+
+        // === Guest name enrichment (tên người đặt) ===
+        // Ưu tiên guestName đã lưu (từ lúc tạo), nếu thiếu thì lookup từ User
+        if (b.getGuestName() == null || b.getGuestName().isBlank()) {
+            if (b.getUserId() != null) {
+                try {
+                    User u = userRepository.findById(b.getUserId())
+                            .or(() -> userRepository.findByUserId(b.getUserId()))
+                            .orElse(null);
+                    if (u != null) {
+                        String name = (u.getFullName() != null && !u.getFullName().isBlank()) ? u.getFullName() : u.getEmail();
+                        b.setGuestName(name != null && !name.isBlank() ? name : "Khách hàng");
+                    }
+                } catch (Exception ignored) {}
+            }
+        }
+
+        // Đảm bảo cuối cùng luôn có guestName (tên người đặt)
+        if (b.getGuestName() == null || b.getGuestName().isBlank()) {
+            b.setGuestName("Khách hàng");
         }
 
         // Hỗ trợ data cũ: extract contactEmail/phone từ specialRequests nếu chưa có
@@ -221,10 +331,32 @@ public class BookingService {
 
     public Page<Booking> getUserBookings(String userId, int page, int size) {
         List<Booking> list = bookingRepository.findByUserIdOrderByCreatedAtDesc(userId);
+
+        // Enrich + force 3 cột Mã/Khách/Phòng cho danh sách của khách
         list.forEach(this::enrichIfNeeded);
+
+        for (Booking b : list) {
+            if (b.getBookingCode() == null || b.getBookingCode().isBlank()) {
+                String fb = (b.getBookingId() != null && !b.getBookingId().isBlank()) ? b.getBookingId()
+                        : (b.getId() != null ? "BK-" + b.getId().substring(0, Math.min(8, b.getId().length())) : "BK-UNK");
+                b.setBookingCode(fb);
+            }
+            if (b.getGuestName() == null || b.getGuestName().isBlank()) {
+                b.setGuestName("Khách hàng");
+            }
+            if (b.getRoomName() == null || b.getRoomName().isBlank()) {
+                b.setRoomName(b.getRoomId() != null ? "Phòng " + b.getRoomId() : "Phòng không xác định");
+            }
+            if (b.getRoomNumber() == null || b.getRoomNumber().isBlank() && b.getRoomId() != null) {
+                b.setRoomNumber(b.getRoomId());
+            }
+        }
+
         int start = Math.min(page * size, list.size());
         int end = Math.min(start + size, list.size());
-        return new PageImpl<>(list.subList(start, end), PageRequest.of(page, size), list.size());
+        List<Booking> pageContent = list.subList(start, end);
+
+        return new PageImpl<>(pageContent, PageRequest.of(page, size), list.size());
     }
 
     public Booking getBookingById(String bookingId, String userId) {
@@ -334,6 +466,21 @@ public class BookingService {
     public List<Booking> getBookingsByUserId(String userId) {
         List<Booking> list = bookingRepository.findByUserIdOrderByCreatedAtDesc(userId);
         list.forEach(this::enrichIfNeeded);
+
+        // Force Mã / Khách / Phòng cho mọi trường hợp
+        for (Booking b : list) {
+            if (b.getBookingCode() == null || b.getBookingCode().isBlank()) {
+                String fb = (b.getBookingId() != null && !b.getBookingId().isBlank()) ? b.getBookingId()
+                        : (b.getId() != null ? "BK-" + b.getId().substring(0, Math.min(8, b.getId().length())) : "BK-UNK");
+                b.setBookingCode(fb);
+            }
+            if (b.getGuestName() == null || b.getGuestName().isBlank()) {
+                b.setGuestName("Khách hàng");
+            }
+            if (b.getRoomName() == null || b.getRoomName().isBlank()) {
+                b.setRoomName(b.getRoomId() != null ? "Phòng " + b.getRoomId() : "Phòng không xác định");
+            }
+        }
         return list;
     }
 
@@ -367,10 +514,25 @@ public class BookingService {
 
     public VietQRService.PaymentQRInfo getPaymentQRInfo(String bookingId, String userId, boolean isStaff, String bankKey) {
         Booking booking = getBookingById(bookingId, userId, isStaff); // sẽ check quyền + enrich
-        double amount = booking.getTotalPrice();
+
+        double roomTotal = booking.getTotalPrice();
+        double surcharge = Math.max(0, qrSurcharge);
+        double payableAmount = roomTotal + surcharge;
+
         String guest = booking.getGuestName();
         String code = booking.getBookingCode() != null ? booking.getBookingCode() : booking.getBookingId();
 
-        return vietQRService.generateForBooking(code, amount, guest, bankKey);
+        VietQRService.PaymentQRInfo info = vietQRService.generateForBooking(code, payableAmount, guest, bankKey);
+
+        // Bổ sung breakdown để frontend có thể hiển thị rõ (nếu muốn tách "tiền phòng + phụ phí QR")
+        info.setRoomAmount(Math.round(roomTotal));
+        info.setSurchargeAmount(Math.round(surcharge));
+
+        if (surcharge > 0) {
+            String note = String.format(" (Đã bao gồm phụ phí QR %,.0fđ)", surcharge);
+            info.setInstructions((info.getInstructions() != null ? info.getInstructions() : "") + note);
+        }
+
+        return info;
     }
 }
