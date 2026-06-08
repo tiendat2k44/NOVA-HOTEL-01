@@ -1,6 +1,5 @@
 package com.novahotel.exception;
 
-import com.novahotel.dto.ApiResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -9,6 +8,10 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
+
+import com.novahotel.dto.ApiResponse;
 
 /**
  * Global Exception Handler
@@ -133,6 +136,32 @@ public class GlobalExceptionHandler {
         );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Object>> handleMaxUploadSizeExceeded(
+            MaxUploadSizeExceededException ex,
+            WebRequest request) {
+        log.warn("Max upload size exceeded: {}", ex.getMessage());
+
+        ApiResponse<Object> response = new ApiResponse<>(
+                413,
+                "Kích thước file vượt quá giới hạn upload. Vui lòng chọn file nhỏ hơn 10MB."
+        );
+        return ResponseEntity.status(413).body(response);
+    }
+
+        @ExceptionHandler(NoResourceFoundException.class)
+        public ResponseEntity<ApiResponse<Object>> handleNoResourceFound(
+                        NoResourceFoundException ex,
+                        WebRequest request) {
+                log.warn("No resource found: {}", ex.getMessage());
+
+                ApiResponse<Object> response = new ApiResponse<>(
+                                HttpStatus.NOT_FOUND.value(),
+                                "Resource not found: " + ex.getMessage()
+                );
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
 
     /**
      * Handler cho các exception khác (catch-all)

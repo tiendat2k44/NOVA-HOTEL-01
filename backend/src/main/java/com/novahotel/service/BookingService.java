@@ -1,18 +1,19 @@
 package com.novahotel.service;
 
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.novahotel.dto.BookingRequest;
 import com.novahotel.exception.BadRequestException;
@@ -24,8 +25,6 @@ import com.novahotel.model.User;
 import com.novahotel.repository.BookingRepository;
 import com.novahotel.repository.RoomRepository;
 import com.novahotel.repository.UserRepository;
-
-import java.time.format.DateTimeFormatter;
 
 @Service
 public class BookingService {
@@ -111,6 +110,14 @@ public class BookingService {
     private void enrichIfNeeded(Booking b) {
         if (b == null) return;
 
+        Room room = null;
+
+        boolean hasRoomName = hasText(b.getRoomName()) && !isUnknownRoomName(b.getRoomName());
+        boolean hasRoomNumber = hasText(b.getRoomNumber());
+        boolean hasGuestName = hasText(b.getGuestName()) && !isDefaultGuestName(b.getGuestName());
+        boolean hasContactEmail = hasText(b.getContactEmail());
+        boolean hasContactPhone = hasText(b.getContactPhone());
+
         // === bookingCode / bookingId fallback (for display as "Mã") ===
         if (b.getBookingCode() == null || b.getBookingCode().isBlank()) {
             String code = b.getBookingId();
@@ -126,21 +133,21 @@ public class BookingService {
         // === Room name / number enrichment (tên phòng được đặt) ===
         // Luôn cố gắng điền roomName + roomNumber nếu thiếu (hỗ trợ data cũ / import)
         if (b.getRoomId() != null) {
-            boolean needRoomName = (b.getRoomName() == null || b.getRoomName().isBlank());
-            boolean needRoomNumber = (b.getRoomNumber() == null || b.getRoomNumber().isBlank());
+            boolean needRoomName = !hasRoomName;
+            boolean needRoomNumber = !hasRoomNumber;
 
             if (needRoomName || needRoomNumber) {
                 try {
-                    Room r = roomRepository.findById(b.getRoomId())
+                    room = roomRepository.findById(b.getRoomId())
                             .or(() -> roomRepository.findByRoomId(b.getRoomId()))
                             .orElse(null);
-                    if (r != null) {
+                    if (room != null) {
                         if (needRoomName) {
-                            b.setRoomName(r.getName() != null && !r.getName().isBlank() ? r.getName() : "Phòng " + b.getRoomId());
+                            b.setRoomName(hasText(room.getName()) ? room.getName() : "Phòng " + b.getRoomId());
                         }
                         if (needRoomNumber) {
-                            String rn = r.getRoomNumber();
-                            b.setRoomNumber(rn != null && !rn.isBlank() ? rn : (r.getRoomId() != null ? r.getRoomId() : b.getRoomId()));
+                            String rn = room.getRoomNumber();
+                            b.setRoomNumber(hasText(rn) ? rn : (hasText(room.getRoomId()) ? room.getRoomId() : b.getRoomId()));
                         }
                     } else {
                         // Fallback rõ ràng
@@ -153,39 +160,62 @@ public class BookingService {
                     }
                 } catch (Exception ignored) {
                     // Đảm bảo không bao giờ null
-                    if (needRoomName && (b.getRoomName() == null || b.getRoomName().isBlank())) {
+                    if (needRoomName && !hasText(b.getRoomName())) {
                         b.setRoomName("Phòng " + b.getRoomId());
                     }
-                    if (needRoomNumber && (b.getRoomNumber() == null || b.getRoomNumber().isBlank())) {
+                    if (needRoomNumber && !hasText(b.getRoomNumber())) {
                         b.setRoomNumber(b.getRoomId());
                     }
                 }
             }
         } else {
-            if (b.getRoomName() == null || b.getRoomName().isBlank()) {
+            if (!hasRoomName) {
                 b.setRoomName("Phòng không xác định");
             }
         }
 
         // === Guest name enrichment (tên người đặt) ===
         // Ưu tiên guestName đã lưu (từ lúc tạo), nếu thiếu thì lookup từ User
-        if (b.getGuestName() == null || b.getGuestName().isBlank()) {
+        if (!hasGuestName || !hasContactEmail || !hasContactPhone) {
             if (b.getUserId() != null) {
                 try {
-                    User u = userRepository.findById(b.getUserId())
+                        User user = userRepository.findById(b.getUserId())
                             .or(() -> userRepository.findByUserId(b.getUserId()))
                             .orElse(null);
-                    if (u != null) {
-                        String name = (u.getFullName() != null && !u.getFullName().isBlank()) ? u.getFullName() : u.getEmail();
-                        b.setGuestName(name != null && !name.isBlank() ? name : "Khách hàng");
+                    if (user != null) {
+                        if (!hasGuestName) {
+                            String name = hasText(user.getFullName()) ? user.getFullName() : user.getEmail();
+                            b.setGuestName(hasText(name) ? name : "Khách hàng");
+                        }
+                        if (!hasContactEmail && hasText(user.getEmail())) {
+                            b.setContactEmail(user.getEmail());
+                        }
+                        if (!hasContactPhone && hasText(user.getPhone())) {
+                            b.setContactPhone(user.getPhone());
+                        }
                     }
                 } catch (Exception ignored) {}
             }
         }
 
         // Đảm bảo cuối cùng luôn có guestName (tên người đặt)
-        if (b.getGuestName() == null || b.getGuestName().isBlank()) {
+        if (!hasText(b.getGuestName())) {
             b.setGuestName("Khách hàng");
+        }
+
+        // Tính lại tổng tiền nếu booking cũ đang lưu 0đ hoặc âm
+        if (b.getTotalPrice() <= 0 && room != null && room.getPrice() != null) {
+            double basePrice = room.getPrice().getBasePrice();
+            long nights = 1;
+            if (b.getCheckIn() != null && b.getCheckOut() != null) {
+                long diff = java.time.temporal.ChronoUnit.DAYS.between(
+                        b.getCheckIn().toInstant().atZone(ZoneId.systemDefault()).toLocalDate(),
+                        b.getCheckOut().toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
+                nights = Math.max(diff, 1);
+            }
+            if (basePrice > 0) {
+                b.setTotalPrice(basePrice * nights);
+            }
         }
 
         // Hỗ trợ data cũ: extract contactEmail/phone từ specialRequests nếu chưa có
@@ -208,6 +238,22 @@ public class BookingService {
                 } catch (Exception ignored) {}
             }
         }
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
+    }
+
+    private boolean isDefaultGuestName(String value) {
+        if (!hasText(value)) return true;
+        String normalized = value.trim().toLowerCase();
+        return "khách hàng".equals(normalized) || "khach hang".equals(normalized);
+    }
+
+    private boolean isUnknownRoomName(String value) {
+        if (!hasText(value)) return true;
+        String normalized = value.trim().toLowerCase();
+        return normalized.contains("phòng không xác định") || normalized.contains("phong khong xac dinh");
     }
 
     public Booking createBooking(String userId, BookingRequest req) {
@@ -486,10 +532,6 @@ public class BookingService {
 
     public Booking saveBooking(Booking booking) {
         return bookingRepository.save(booking);
-    }
-
-    private void ensureOwnership(Booking booking, String userId) {
-        ensureCanAccess(booking, userId, false);
     }
 
     private void ensureCanAccess(Booking booking, String userId, boolean isStaff) {

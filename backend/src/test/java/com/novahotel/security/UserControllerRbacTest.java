@@ -1,26 +1,26 @@
 package com.novahotel.security;
 
-import com.novahotel.config.JwtConfig;
-import com.novahotel.model.User;
-import com.novahotel.service.UserService;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import java.util.Collections;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import org.springframework.web.context.WebApplicationContext;
 
-import java.util.Collections;
-
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.novahotel.config.JwtConfig;
+import com.novahotel.service.UserService;
 
 /**
  * Test RBAC cho endpoint `/api/users`.
@@ -38,7 +38,7 @@ public class UserControllerRbacTest {
     @Autowired
     private JwtConfig jwtConfig;
 
-    @MockBean
+    @MockitoBean
     private UserService userService;
 
     @BeforeEach

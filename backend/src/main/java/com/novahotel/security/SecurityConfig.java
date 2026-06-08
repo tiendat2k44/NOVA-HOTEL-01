@@ -65,6 +65,8 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 // Cấu hình authorization
                 .authorizeHttpRequests(authz -> authz
+                        // Always allow browser CORS preflight requests
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // Public endpoints (không cần xác thực)
                         .requestMatchers(
                                 "/api/auth/login",

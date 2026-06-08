@@ -11,6 +11,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -41,13 +42,13 @@ public class UploadController {
     private static final List<String> ALLOWED_EXT = List.of(".jpg", ".jpeg", ".png", ".webp", ".gif");
 
     /**
-     * Upload ảnh phòng (ADMIN only)
+      * Upload ảnh phòng (ADMIN only)
      * POST /api/uploads/rooms
      * Form-data: file (MultipartFile)
      * 
      * Trả về: { code, message, data: { url: "/uploads/rooms/xxx.jpg" } }
      */
-    @PostMapping("/rooms")
+    @PostMapping(value = "/rooms", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Map<String, String>>> uploadRoomImage(
             @RequestParam("file") MultipartFile file) {
