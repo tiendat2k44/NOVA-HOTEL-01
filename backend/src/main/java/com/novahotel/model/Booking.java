@@ -18,7 +18,7 @@ public class Booking {
     private Date checkIn;
     private Date checkOut;
     private String status;
-    private double totalPrice;
+    private Double totalPrice;
     private String specialRequests;
     private Date createdAt;
 
@@ -34,7 +34,7 @@ public class Booking {
 
     public Booking() {}
 
-    public Booking(String id, String bookingId, String userId, String roomId, Date checkIn, Date checkOut, String status, double totalPrice, String specialRequests, Date createdAt,
+    public Booking(String id, String bookingId, String userId, String roomId, Date checkIn, Date checkOut, String status, Double totalPrice, String specialRequests, Date createdAt,
                    String bookingCode, String guestName, String roomName, String roomNumber,
                    String contactEmail, String contactPhone) {
         this.id = id;
@@ -76,8 +76,8 @@ public class Booking {
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
 
-    public double getTotalPrice() { return totalPrice; }
-    public void setTotalPrice(double totalPrice) { this.totalPrice = totalPrice; }
+    public Double getTotalPrice() { return totalPrice; }
+    public void setTotalPrice(Double totalPrice) { this.totalPrice = totalPrice; }
 
     public String getSpecialRequests() { return specialRequests; }
     public void setSpecialRequests(String specialRequests) { this.specialRequests = specialRequests; }

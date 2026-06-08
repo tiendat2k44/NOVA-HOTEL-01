@@ -173,7 +173,7 @@ public class RoomService {
     }
 
     private double getBasePrice(Room room) {
-        if (room.getPrice() == null) {
+        if (room.getPrice() == null || room.getPrice().getBasePrice() == null) {
             return 0.0;
         }
         return room.getPrice().getBasePrice();

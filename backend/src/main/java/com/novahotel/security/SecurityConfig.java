@@ -101,6 +101,14 @@ public class SecurityConfig {
                         // Booking endpoints
                         .requestMatchers(HttpMethod.GET, "/api/bookings").hasAnyRole("ADMIN", "RECEPTIONIST")
                         .requestMatchers("/api/bookings/my-bookings").hasAnyRole("USER", "ADMIN", "RECEPTIONIST")
+                        .requestMatchers(HttpMethod.GET, "/api/bookings/banks").hasAnyRole("USER", "ADMIN", "RECEPTIONIST")
+                        // Use simple single-segment wildcard for bookingId. 
+                        // ** in the middle is not allowed with default PathPatternParser in Spring 6+.
+                        .requestMatchers(HttpMethod.GET, 
+                            "/api/bookings/*/payment-qr", 
+                            "/api/bookings/*/payment-qr/"
+                        ).hasAnyRole("USER", "ADMIN", "RECEPTIONIST")
+                        .requestMatchers(HttpMethod.PATCH, "/api/bookings/*/status").hasAnyRole("USER", "ADMIN", "RECEPTIONIST")
                         // Swagger/OpenAPI endpoints
                         .requestMatchers(
                                 "/swagger-ui/**",
@@ -143,7 +151,15 @@ public class SecurityConfig {
         ));
 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowedHeaders(Arrays.asList(
+                "Authorization",
+                "Content-Type",
+                "Accept",
+                "Origin",
+                "X-Requested-With",
+                "Cache-Control"
+        ));
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 

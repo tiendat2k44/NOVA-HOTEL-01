@@ -13,6 +13,7 @@ public class RestAccessDeniedHandler implements AccessDeniedHandler {
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response,
                        AccessDeniedException accessDeniedException) throws IOException {
+        CorsResponseHelper.applyCorsHeaders(request, response);
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         response.setContentType("application/json");
         // Trả message rõ ràng hơn để frontend toast không chỉ "Forbidden"

@@ -1,14 +1,9 @@
 @echo off
 chcp 65001 >nul
 echo ============================================
-echo   NOVA HOTEL - Dung Backend
+echo   NOVA HOTEL - Dung Backend (port 8080)
 echo ============================================
 echo.
 
-echo Dang dung tien trinh Java...
-taskkill /F /IM java.exe /FI "WINDOWTITLE eq *nova-hotel*" 2>nul
-taskkill /F /IM java.exe 2>nul
-
-echo.
-echo Da gui lenh dung.
-pause
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0..\stop-backend.ps1"
+exit /b %ERRORLEVEL%

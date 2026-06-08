@@ -6,6 +6,9 @@ import java.util.Objects;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Document(collection = "rooms")
 public class Room {
     @Id
@@ -78,27 +81,27 @@ public class Room {
 
     // Inner classes
     public static class Price {
-        private double basePrice;
+        private Double basePrice;
         private SeasonalPrice seasonalPrice;
 
         public Price() {}
-        public Price(double basePrice, SeasonalPrice seasonalPrice) { this.basePrice = basePrice; this.seasonalPrice = seasonalPrice; }
-        public double getBasePrice() { return basePrice; }
-        public void setBasePrice(double basePrice) { this.basePrice = basePrice; }
+        public Price(Double basePrice, SeasonalPrice seasonalPrice) { this.basePrice = basePrice; this.seasonalPrice = seasonalPrice; }
+        public Double getBasePrice() { return basePrice; }
+        public void setBasePrice(Double basePrice) { this.basePrice = basePrice; }
         public SeasonalPrice getSeasonalPrice() { return seasonalPrice; }
         public void setSeasonalPrice(SeasonalPrice seasonalPrice) { this.seasonalPrice = seasonalPrice; }
     }
 
     public static class SeasonalPrice {
-        private double highSeason;
-        private double lowSeason;
+        private Double highSeason;
+        private Double lowSeason;
 
         public SeasonalPrice() {}
-        public SeasonalPrice(double highSeason, double lowSeason) { this.highSeason = highSeason; this.lowSeason = lowSeason; }
-        public double getHighSeason() { return highSeason; }
-        public void setHighSeason(double highSeason) { this.highSeason = highSeason; }
-        public double getLowSeason() { return lowSeason; }
-        public void setLowSeason(double lowSeason) { this.lowSeason = lowSeason; }
+        public SeasonalPrice(Double highSeason, Double lowSeason) { this.highSeason = highSeason; this.lowSeason = lowSeason; }
+        public Double getHighSeason() { return highSeason; }
+        public void setHighSeason(Double highSeason) { this.highSeason = highSeason; }
+        public Double getLowSeason() { return lowSeason; }
+        public void setLowSeason(Double lowSeason) { this.lowSeason = lowSeason; }
     }
 
     @Override

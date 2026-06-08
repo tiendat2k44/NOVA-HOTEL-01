@@ -203,8 +203,11 @@ public class BookingService {
             b.setGuestName("Khách hàng");
         }
 
+        applyDisplayDefaults(b);
+
         // Tính lại tổng tiền nếu booking cũ đang lưu 0đ hoặc âm
-        if (b.getTotalPrice() <= 0 && room != null && room.getPrice() != null) {
+        double currentTotal = b.getTotalPrice() != null ? b.getTotalPrice() : 0.0;
+        if (currentTotal <= 0 && room != null && room.getPrice() != null && room.getPrice().getBasePrice() != null) {
             double basePrice = room.getPrice().getBasePrice();
             long nights = 1;
             if (b.getCheckIn() != null && b.getCheckOut() != null) {
@@ -256,6 +259,34 @@ public class BookingService {
         return normalized.contains("phòng không xác định") || normalized.contains("phong khong xac dinh");
     }
 
+    /**
+     * Đảm bảo các field hiển thị (mã, khách, phòng, liên hệ) luôn có giá trị trước khi trả về frontend.
+     */
+    private void applyDisplayDefaults(Booking b) {
+        if (b == null) return;
+
+        if (!hasText(b.getBookingCode())) {
+            String code = hasText(b.getBookingId()) ? b.getBookingId()
+                    : (b.getId() != null ? "BK-" + b.getId().substring(0, Math.min(8, b.getId().length())) : "BK-UNK");
+            b.setBookingCode(code);
+        }
+        if (!hasText(b.getBookingId())) {
+            b.setBookingId(b.getBookingCode());
+        }
+        if (!hasText(b.getGuestName())) {
+            b.setGuestName("Khách hàng");
+        }
+        if (!hasText(b.getRoomName())) {
+            b.setRoomName(b.getRoomId() != null ? "Phòng " + b.getRoomId() : "Phòng không xác định");
+        }
+        if (!hasText(b.getRoomNumber()) && hasText(b.getRoomId())) {
+            b.setRoomNumber(b.getRoomId());
+        }
+        if (b.getTotalPrice() == null) {
+            b.setTotalPrice(0.0);
+        }
+    }
+
     public Booking createBooking(String userId, BookingRequest req) {
         if (req == null) {
             throw new BadRequestException("Thiếu thông tin đặt phòng");
@@ -294,7 +325,8 @@ public class BookingService {
         if (!roomService.isRoomAvailable(room, req.getCheckInDate(), req.getCheckOutDate())) {
             throw new BadRequestException("Phòng này đã có người đặt (hoặc đang chờ xác nhận) trong khoảng thời gian bạn chọn. Vui lòng chọn phòng khác hoặc thời gian khác.");
         }
-        double basePrice = (room.getPrice() != null) ? room.getPrice().getBasePrice() : 0.0;
+        double basePrice = (room.getPrice() != null && room.getPrice().getBasePrice() != null)
+                ? room.getPrice().getBasePrice() : 0.0;
         long nights = java.time.temporal.ChronoUnit.DAYS.between(req.getCheckInDate(), req.getCheckOutDate());
         double total = basePrice * Math.max(nights, 1);
 
@@ -340,6 +372,7 @@ public class BookingService {
                 String checkInStr = req.getCheckInDate() != null ? req.getCheckInDate().format(df) : "";
                 String checkOutStr = req.getCheckOutDate() != null ? req.getCheckOutDate().format(df) : "";
 
+                double savedTotal = saved.getTotalPrice() != null ? saved.getTotalPrice() : 0.0;
                 emailService.sendBookingConfirmation(
                         contactEmail,
                         saved.getGuestName(),
@@ -347,7 +380,7 @@ public class BookingService {
                         saved.getRoomName(),
                         checkInStr,
                         checkOutStr,
-                        saved.getTotalPrice(),
+                        savedTotal,
                         saved.getStatus()
                 );
 
@@ -357,7 +390,7 @@ public class BookingService {
                         saved.getGuestName(),
                         contactEmail,
                         saved.getRoomName(),
-                        saved.getTotalPrice()
+                        savedTotal
                 );
             } else {
                 log.warn("Booking {} không có contactEmail, bỏ qua gửi email xác nhận.", saved.getBookingCode());
@@ -410,11 +443,35 @@ public class BookingService {
     }
 
     public Booking getBookingById(String bookingId, String userId, boolean isStaff) {
-        Optional<Booking> opt = bookingRepository.findById(bookingId);
-        Booking booking = opt.orElseThrow(() -> new ResourceNotFoundException("Booking không tìm thấy"));
+        Booking booking = resolveBooking(bookingId);
         ensureCanAccess(booking, userId, isStaff);
         enrichIfNeeded(booking);
         return booking;
+    }
+
+    /**
+     * Linh hoạt resolve booking theo nhiều kiểu id mà client hay gửi:
+     * - mongo _id (ưu tiên)
+     * - bookingId / bookingCode (mã BK...)
+     * Giúp tránh lỗi "Booking không tìm thấy" khi UI truyền mã thay vì _id, hoặc data legacy.
+     */
+    private Booking resolveBooking(String key) {
+        if (key == null || key.isBlank()) {
+            throw new ResourceNotFoundException("Booking không tìm thấy");
+        }
+        // 1. Thử trực tiếp theo _id (mongo id)
+        Optional<Booking> opt = bookingRepository.findById(key);
+        if (opt.isPresent()) return opt.get();
+
+        // 2. Thử theo business bookingId
+        opt = bookingRepository.findByBookingId(key);
+        if (opt.isPresent()) return opt.get();
+
+        // 3. Thử theo bookingCode
+        opt = bookingRepository.findByBookingCode(key);
+        if (opt.isPresent()) return opt.get();
+
+        throw new ResourceNotFoundException("Booking không tìm thấy");
     }
 
     public void cancelBooking(String bookingId, String userId) {
@@ -422,88 +479,88 @@ public class BookingService {
     }
 
     public void cancelBooking(String bookingId, String userId, boolean isStaff) {
-        Optional<Booking> opt = bookingRepository.findById(bookingId);
-        if (opt.isPresent()) {
-            Booking b = opt.get();
-            ensureCanAccess(b, userId, isStaff);
-            b.setStatus("cancelled");
-            bookingRepository.save(b);
-            return;
-        }
-        throw new ResourceNotFoundException("Booking không tìm thấy");
+        Booking b = resolveBooking(bookingId);
+        ensureCanAccess(b, userId, isStaff);
+        b.setStatus("cancelled");
+        bookingRepository.save(b);
     }
 
     public Booking updateBooking(String bookingId, BookingRequest req, String userId) {
         return updateBooking(bookingId, req, userId, false);
     }
 
+    public Booking updateBookingStatus(String bookingId, String status, String userId, boolean isStaff) {
+        BookingRequest req = new BookingRequest();
+        req.setStatus(status);
+        return updateBooking(bookingId, req, userId, isStaff);
+    }
+
     public Booking updateBooking(String bookingId, BookingRequest req, String userId, boolean isStaff) {
-        Optional<Booking> opt = bookingRepository.findById(bookingId);
-        if (opt.isPresent()) {
-            Booking b = opt.get();
-            ensureCanAccess(b, userId, isStaff);
-            if (req != null) {
-                if (req.getCheckInDate() != null)
-                    b.setCheckIn(Date.from(req.getCheckInDate().atStartOfDay(ZoneId.systemDefault()).toInstant()));
-                if (req.getCheckOutDate() != null)
-                    b.setCheckOut(Date.from(req.getCheckOutDate().atStartOfDay(ZoneId.systemDefault()).toInstant()));
-                if (req.getNotes() != null)
-                    b.setSpecialRequests(req.getNotes());
-                // Hỗ trợ cập nhật status (dành cho admin)
-                if (req.getStatus() != null && !req.getStatus().isBlank()) {
-                    String oldStatus = b.getStatus();
-                    String newStatus = normalizeStatus(req.getStatus());
-                    b.setStatus(newStatus);
+        Booking b = resolveBooking(bookingId);
+        ensureCanAccess(b, userId, isStaff);
+        if (req != null) {
+            if (req.getCheckInDate() != null)
+                b.setCheckIn(Date.from(req.getCheckInDate().atStartOfDay(ZoneId.systemDefault()).toInstant()));
+            if (req.getCheckOutDate() != null)
+                b.setCheckOut(Date.from(req.getCheckOutDate().atStartOfDay(ZoneId.systemDefault()).toInstant()));
+            if (req.getNotes() != null)
+                b.setSpecialRequests(req.getNotes());
+            // Hỗ trợ cập nhật status (dành cho admin)
+            if (req.getStatus() != null && !req.getStatus().isBlank()) {
+                String oldStatus = b.getStatus();
+                String newStatus = normalizeStatus(req.getStatus());
+                b.setStatus(newStatus);
 
-                    // Gửi email thông báo thay đổi trạng thái (nếu có email)
-                    if (!newStatus.equalsIgnoreCase(oldStatus)) {
-                        try {
-                            String emailTo = (b.getContactEmail() != null && !b.getContactEmail().isBlank())
-                                    ? b.getContactEmail() : null;
-                            if (emailTo != null) {
-                                String note = "Vui lòng kiểm tra chi tiết trong My Bookings. ";
-                                if ("confirmed".equalsIgnoreCase(newStatus)) {
-                                    note += "Bạn có thể thanh toán qua QR VietQR ngay bây giờ.";
-                                } else if ("completed".equalsIgnoreCase(newStatus)) {
-                                    note += "Cảm ơn quý khách đã sử dụng dịch vụ.";
-                                } else if ("cancelled".equalsIgnoreCase(newStatus)) {
-                                    note += "Nếu cần hỗ trợ hoàn tiền, vui lòng liên hệ chúng tôi.";
-                                } else if ("paid".equalsIgnoreCase(newStatus)) {
-                                    note += "Cảm ơn bạn đã thanh toán! Admin sẽ kiểm tra và xác nhận sớm.";
-                                }
-                                emailService.sendBookingStatusUpdate(emailTo, b.getGuestName(),
-                                        b.getBookingCode(), b.getRoomName(), newStatus, note);
+                // Gửi email thông báo thay đổi trạng thái (nếu có email)
+                if (!newStatus.equalsIgnoreCase(oldStatus)) {
+                    try {
+                        String emailTo = (b.getContactEmail() != null && !b.getContactEmail().isBlank())
+                                ? b.getContactEmail() : null;
+                        if (emailTo != null) {
+                            String note = "Vui lòng kiểm tra chi tiết trong My Bookings. ";
+                            if ("confirmed".equalsIgnoreCase(newStatus)) {
+                                note += "Bạn có thể thanh toán qua QR VietQR ngay bây giờ.";
+                            } else if ("completed".equalsIgnoreCase(newStatus)) {
+                                note += "Cảm ơn quý khách đã sử dụng dịch vụ.";
+                            } else if ("cancelled".equalsIgnoreCase(newStatus)) {
+                                note += "Nếu cần hỗ trợ hoàn tiền, vui lòng liên hệ chúng tôi.";
+                            } else if ("paid".equalsIgnoreCase(newStatus)) {
+                                note += "Cảm ơn bạn đã thanh toán! Admin sẽ kiểm tra và xác nhận sớm.";
                             }
-
-                            // Nếu khách báo "đã thanh toán" → gửi thông báo cho admin
-                            if ("paid".equalsIgnoreCase(newStatus)) {
-                                emailService.sendAdminBookingNotification(
-                                        b.getBookingCode() + " - ĐÃ THANH TOÁN",
-                                        b.getGuestName(),
-                                        emailTo != null ? emailTo : "N/A",
-                                        b.getRoomName(),
-                                        b.getTotalPrice()
-                                );
-                            }
-                        } catch (Exception ex) {
-                            log.warn("Gửi email cập nhật trạng thái thất bại: {}", ex.getMessage());
+                            emailService.sendBookingStatusUpdate(emailTo, b.getGuestName(),
+                                    b.getBookingCode(), b.getRoomName(), newStatus, note);
                         }
+
+                        // Nếu khách báo "đã thanh toán" → gửi thông báo cho admin
+                        if ("paid".equalsIgnoreCase(newStatus)) {
+                            double paidTotal = b.getTotalPrice() != null ? b.getTotalPrice() : 0.0;
+                            emailService.sendAdminBookingNotification(
+                                    b.getBookingCode() + " - ĐÃ THANH TOÁN",
+                                    b.getGuestName(),
+                                    emailTo != null ? emailTo : "N/A",
+                                    b.getRoomName(),
+                                    paidTotal
+                            );
+                        }
+                    } catch (Exception ex) {
+                        log.warn("Gửi email cập nhật trạng thái thất bại: {}", ex.getMessage());
                     }
                 }
             }
-            Booking saved = bookingRepository.save(b);
-            enrichIfNeeded(saved);
-            return saved;
         }
-        throw new ResourceNotFoundException("Booking không tìm thấy");
+        Booking saved = bookingRepository.save(b);
+        enrichIfNeeded(saved);
+        return saved;
     }
 
     private String normalizeStatus(String s) {
         if (s == null) return "pending";
         String v = s.toLowerCase().trim();
         if (v.contains("cancel")) return "cancelled";
+        if (v.equals("checked-in") || v.equals("checked_in")) return "checked-in";
+        if (v.equals("checked-out") || v.equals("checked_out")) return "checked-out";
         if (v.contains("confirm")) return "confirmed";
-        if (v.contains("complete") || v.contains("check")) return "completed";
+        if (v.equals("completed") || v.equals("complete")) return "completed";
         if (v.contains("pend")) return "pending";
         if (v.contains("paid") || v.contains("thanh toan") || v.contains("da thanh")) return "paid";
         return v;
@@ -557,7 +614,7 @@ public class BookingService {
     public VietQRService.PaymentQRInfo getPaymentQRInfo(String bookingId, String userId, boolean isStaff, String bankKey) {
         Booking booking = getBookingById(bookingId, userId, isStaff); // sẽ check quyền + enrich
 
-        double roomTotal = booking.getTotalPrice();
+        double roomTotal = booking.getTotalPrice() != null ? booking.getTotalPrice() : 0.0;
         double surcharge = Math.max(0, qrSurcharge);
         double payableAmount = roomTotal + surcharge;
 
@@ -569,6 +626,16 @@ public class BookingService {
         // Bổ sung breakdown để frontend có thể hiển thị rõ (nếu muốn tách "tiền phòng + phụ phí QR")
         info.setRoomAmount(Math.round(roomTotal));
         info.setSurchargeAmount(Math.round(surcharge));
+
+        // Bổ sung thông tin khách hàng + booking cho frontend (QR modal / hóa đơn)
+        info.setGuestName(booking.getGuestName());
+        info.setContactEmail(booking.getContactEmail());
+        info.setContactPhone(booking.getContactPhone());
+        info.setRoomName(booking.getRoomName());
+        info.setRoomNumber(booking.getRoomNumber());
+        info.setTransferContent(info.getDescription());
+        info.setCustomerName(booking.getGuestName());
+        info.setTotalPrice(Math.round(roomTotal));
 
         if (surcharge > 0) {
             String note = String.format(" (Đã bao gồm phụ phí QR %,.0fđ)", surcharge);

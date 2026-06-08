@@ -143,6 +143,16 @@ public class VietQRService {
         private String instructions;
         private String selectedBankKey;   // key ngân hàng khách chọn (VCB, MB...)
 
+        // Thông tin khách hàng / booking (bổ sung cho frontend)
+        private String guestName;
+        private String customerName;
+        private String contactEmail;
+        private String contactPhone;
+        private String roomName;
+        private String roomNumber;
+        private String transferContent;
+        private long totalPrice;
+
         // getters/setters
         public String getQrUrl() { return qrUrl; }
         public void setQrUrl(String qrUrl) { this.qrUrl = qrUrl; }
@@ -179,5 +189,29 @@ public class VietQRService {
 
         public String getSelectedBankKey() { return selectedBankKey; }
         public void setSelectedBankKey(String selectedBankKey) { this.selectedBankKey = selectedBankKey; }
+
+        public String getGuestName() { return guestName; }
+        public void setGuestName(String guestName) { this.guestName = guestName; }
+
+        public String getCustomerName() { return customerName; }
+        public void setCustomerName(String customerName) { this.customerName = customerName; }
+
+        public String getContactEmail() { return contactEmail; }
+        public void setContactEmail(String contactEmail) { this.contactEmail = contactEmail; }
+
+        public String getContactPhone() { return contactPhone; }
+        public void setContactPhone(String contactPhone) { this.contactPhone = contactPhone; }
+
+        public String getRoomName() { return roomName; }
+        public void setRoomName(String roomName) { this.roomName = roomName; }
+
+        public String getRoomNumber() { return roomNumber; }
+        public void setRoomNumber(String roomNumber) { this.roomNumber = roomNumber; }
+
+        public String getTransferContent() { return transferContent; }
+        public void setTransferContent(String transferContent) { this.transferContent = transferContent; }
+
+        public long getTotalPrice() { return totalPrice; }
+        public void setTotalPrice(long totalPrice) { this.totalPrice = totalPrice; }
     }
 }

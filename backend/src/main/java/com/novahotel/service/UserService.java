@@ -354,8 +354,34 @@ public class UserService {
 
             GoogleIdToken idToken = verifier.verify(credential);
             if (idToken == null) {
-                throw new UnauthorizedException("Google token không hợp lệ hoặc đã hết hạn");
+                // Thử parse JWT để lấy thông tin debug (audience) mà không verify (chỉ cho log)
+                String tokenAud = "unknown";
+                try {
+                    String[] parts = credential.split("\\.");
+                    if (parts.length == 3) {
+                        String payloadJson = new String(java.util.Base64.getUrlDecoder().decode(parts[1]));
+                        // crude extract "aud"
+                        if (payloadJson.contains("\"aud\"")) {
+                            int start = payloadJson.indexOf("\"aud\"") + 6;
+                            int colon = payloadJson.indexOf(":", start);
+                            int quote = payloadJson.indexOf("\"", colon + 1);
+                            if (quote > 0) {
+                                int end = payloadJson.indexOf("\"", quote + 1);
+                                tokenAud = payloadJson.substring(quote + 1, end);
+                            }
+                        }
+                    }
+                } catch (Exception ignore) {}
+
+                log.warn("Google ID token verify returned null. Expected audience (backend google.client-id): [{}], token audience (aud claim): [{}]. " +
+                        "Common causes: 1) Client ID mismatch between VITE_GOOGLE_CLIENT_ID (frontend) and google.client-id (backend). " +
+                        "2) http://localhost:5173 (and 127.0.0.1:5173) not added to 'Authorized JavaScript origins' in Google Cloud Console for this Client ID. " +
+                        "3) Token expired or from wrong Google project.",
+                        googleClientId, tokenAud);
+
+                throw new UnauthorizedException("Google token không hợp lệ hoặc đã hết hạn (kiểm tra Client ID khớp giữa frontend/backend và Authorized origins trong Google Console)");
             }
+
             GoogleIdToken.Payload payload = idToken.getPayload();
             String email = payload.getEmail();
             String name = (String) payload.get("name");
@@ -365,6 +391,9 @@ public class UserService {
             }
 
             return loginOrRegisterWithGoogle(email, name != null ? name : email.split("@")[0]);
+        } catch (UnauthorizedException ue) {
+            // rethrow our own clean errors
+            throw ue;
         } catch (Exception ex) {
             log.error("Google token verify failed", ex);
             throw new UnauthorizedException("Không thể xác thực Google: " + ex.getMessage());

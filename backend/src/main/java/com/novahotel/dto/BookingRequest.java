@@ -2,11 +2,14 @@ package com.novahotel.dto;
 
 import java.time.LocalDate;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 /**
  * DTO cho request đặt phòng
  * Chứa thông tin chi tiết để thực hiện booking
  * Truy vấn cốt lõi #2: Đặt phòng (booking)
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class BookingRequest {
     /**
      * ID của phòng được đặt

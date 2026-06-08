@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -96,6 +97,19 @@ public class GlobalExceptionHandler {
      * @param request WebRequest
      * @return ApiResponse với statusCode 400 và error details
      */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<Object>> handleHttpMessageNotReadable(
+            HttpMessageNotReadableException ex,
+            WebRequest request) {
+        log.warn("JSON parse error: {}", ex.getMessage());
+
+        ApiResponse<Object> response = new ApiResponse<>(
+                HttpStatus.BAD_REQUEST.value(),
+                "Dữ liệu gửi lên không hợp lệ. Vui lòng kiểm tra lại định dạng JSON."
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Object>> handleValidationException(
             MethodArgumentNotValidException ex,
@@ -156,9 +170,15 @@ public class GlobalExceptionHandler {
                         WebRequest request) {
                 log.warn("No resource found: {}", ex.getMessage());
 
+                String msg = ex.getMessage();
+                // Helpful message for developers when API routes are missing (usually means need mvn clean + restart)
+                if (msg != null && (msg.contains("/api/bookings/") || msg.contains("payment-qr") || msg.contains("banks"))) {
+                        msg = "API endpoint không được tìm thấy. Hãy chạy 'mvn clean' và restart backend (spring-boot:run) sau khi sửa controller.";
+                }
+
                 ApiResponse<Object> response = new ApiResponse<>(
                                 HttpStatus.NOT_FOUND.value(),
-                                "Resource not found: " + ex.getMessage()
+                                "Resource not found: " + msg
                 );
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
@@ -175,11 +195,29 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Object>> handleGlobalException(
             Exception ex,
             WebRequest request) {
+
+        String message = ex.getMessage() != null ? ex.getMessage() : ex.toString();
+
+        // If this is the "No static resource" for our known dynamic API routes (payment-qr, banks...),
+        // treat it as 404 with actionable advice instead of ugly 500. This usually means the
+        // controller method was not registered because the app was not restarted after a code change.
+        if (message.contains("No static resource") &&
+            (message.contains("/payment-qr") || message.contains("/banks") || message.contains("/api/bookings/"))) {
+
+            log.warn("Treating unmatched API route as 404 (likely needs mvn clean + restart): {}", message);
+
+            ApiResponse<Object> response = new ApiResponse<>(
+                    HttpStatus.NOT_FOUND.value(),
+                    "API endpoint không tồn tại trong backend đang chạy. Chạy 'mvn clean spring-boot:run' (hoặc xóa thư mục target rồi start lại) để đăng ký lại controller mappings."
+            );
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+
         log.error("Internal server error: ", ex);
-        
+
         ApiResponse<Object> response = new ApiResponse<>(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "Internal server error: " + ex.getMessage()
+                "Internal server error: " + message
         );
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }

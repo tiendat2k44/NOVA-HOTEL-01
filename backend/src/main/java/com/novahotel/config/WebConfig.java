@@ -43,7 +43,7 @@ public class WebConfig implements WebMvcConfigurer {
                 // Cho phép tất cả HTTP methods (rất quan trọng cho preflight OPTIONS)
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                 // Cho phép tất cả headers (đặc biệt Authorization)
-                .allowedHeaders("*")
+                .allowedHeaders("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With", "Cache-Control")
                 // Cho phép gửi credentials (JWT token, cookies)
                 .allowCredentials(true)
                 // Thời gian cache CORS preflight response (giây)

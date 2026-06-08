@@ -66,6 +66,12 @@ public class JwtFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
+        // Preflight CORS — không xử lý JWT, để CorsFilter trả headers đúng.
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         // Skip JWT processing entirely for public authentication endpoints.
         // This prevents stale tokens from triggering AuthenticationEntryPoint on /auth/google, login, register, etc.
         String requestPath = request.getRequestURI();
