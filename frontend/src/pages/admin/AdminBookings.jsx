@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { apiCall, unwrap } from '../../api/client';
+import { apiCall, getBookingPaymentQr, unwrap } from '../../api/client';
 import Modal from '../../components/Modal';
 import Pagination from '../../components/Pagination';
 import { useToast } from '../../context/ToastContext';
@@ -125,6 +125,8 @@ export default function AdminBookings() {
     try {
       const response = await apiCall(`/bookings?page=${page}&size=${size}`, 'GET');
       const data = unwrap(response);
+      console.log("Check data",data);
+      
 
       let rows = [];
       let total = 0;
@@ -159,7 +161,7 @@ export default function AdminBookings() {
   const updateStatus = async (bookingId, newStatus) => {
     if (!bookingId || !newStatus) return;
     try {
-      await apiCall(`/bookings/${bookingId}`, 'PUT', { status: newStatus });
+      await apiCall(`/bookings/${bookingId}/status`, 'PATCH', { status: newStatus });
       showToast('Đã cập nhật trạng thái.', 'success');
       load(currentPage, pageSize);
       loadAll();
@@ -213,7 +215,8 @@ export default function AdminBookings() {
   };
 
   const openAdminQR = async (booking, bankKey = null) => {
-    const bookingId = booking.id || booking._id;
+    // Ưu tiên mongo id, fallback sang các field mã booking (phòng trường hợp serialization khác nhau)
+    const bookingId = booking.id || booking._id || booking.bookingId || booking.code || booking.bookingCode;
     setShowQR(true);
     setQrInfo(null);
     setQrLoading(true);
@@ -229,10 +232,8 @@ export default function AdminBookings() {
       }
     }
 
-    const query = bankKey ? `?bank=${bankKey}` : (selectedBank ? `?bank=${selectedBank}` : '');
-
     try {
-      const response = await apiCall(`/bookings/${bookingId}/payment-qr${query}`, 'GET');
+      const response = await getBookingPaymentQr(bookingId, bankKey || selectedBank || '');
       setQrInfo(unwrap(response));
     } catch (error) {
       showToast(error.message || 'Không tải QR.', 'danger');

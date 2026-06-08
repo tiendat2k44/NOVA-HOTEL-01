@@ -33,6 +33,7 @@ export default function Register() {
   };
 
   // Google Sign Up / Login (phiên bản thật - không có demo)
+  // Yêu cầu giống Login: Client ID khớp + Authorized JavaScript origins (localhost:5173) phải được cấu hình trong Google Cloud Console cho Web Client ID.
   const handleGoogleRegister = async () => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -57,7 +58,8 @@ export default function Register() {
       showToast('Đăng ký / Đăng nhập Google thành công!', 'success');
       navigate(user ? '/' : '/login');
     } catch (err) {
-      showToast(err.message || 'Đăng ký bằng Google thất bại.', 'danger');
+      const msg = err.message || 'Đăng ký bằng Google thất bại.';
+      showToast(msg + ' (Kiểm tra: Client ID khớp giữa .env và backend, và origin http://localhost:5173 đã được authorize trong Google Console)', 'danger');
     } finally {
       setLoading(false);
     }

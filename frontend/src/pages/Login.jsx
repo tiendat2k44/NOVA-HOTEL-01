@@ -30,10 +30,12 @@ export default function Login() {
   };
 
   // ==================== GOOGLE LOGIN (phiên bản thật - không demo) ====================
-  // Yêu cầu: 
-  // 1. Đặt VITE_GOOGLE_CLIENT_ID trong frontend/.env (lấy từ Google Cloud Console > Credentials > Web application)
-  // 2. Đặt google.client-id trong backend application.properties (phải giống hệt)
-  // 3. Thêm http://localhost:5173 vào Authorized JavaScript origins của Client ID
+  // Yêu cầu BẮT BUỘC:
+  // 1. Đặt VITE_GOOGLE_CLIENT_ID trong frontend/.env (phải giống hệt google.client-id ở backend)
+  // 2. Trong Google Cloud Console > Credentials > Web application Client ID:
+  //    - Thêm http://localhost:5173 VÀ http://127.0.0.1:5173 vào "Authorized JavaScript origins"
+  // 3. Sau khi sửa .env phải Ctrl+C frontend rồi chạy lại "npm run dev" (Vite không hot-reload env)
+  // 4. Sau khi sửa Google Console có thể cần đợi 1-2 phút + clear cache trình duyệt / incognito
 
   const handleGoogleLogin = () => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -142,7 +144,9 @@ export default function Login() {
       const target = isAdmin(authUser) ? '/admin' : '/';
       navigate(target, { replace: true });
     } catch (err) {
-      showToast(err.message || 'Đăng nhập Google thất bại. Kiểm tra cấu hình Client ID.', 'danger');
+      const msg = err.message || 'Đăng nhập Google thất bại.';
+      // Hiển thị message chi tiết từ backend (thường sẽ nhắc về Client ID / Authorized origins)
+      showToast(msg + ' (Kiểm tra: 1) VITE_GOOGLE_CLIENT_ID == google.client-id, 2) http://localhost:5173 đã được thêm vào Authorized JavaScript origins trong Google Cloud Console)', 'danger');
     } finally {
       setLoading(false);
       // Dọn container nút Google nếu còn

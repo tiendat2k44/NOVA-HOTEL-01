@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { apiCall, unwrap, unwrapList } from '../api/client';
+import { apiCall, getBookingPaymentQr, unwrap, unwrapList } from '../api/client';
 import Reveal from '../components/Reveal';
 import { useToast } from '../context/ToastContext';
 import { formatCurrency, formatDate, formatDateTime } from '../utils/format';
@@ -55,7 +55,7 @@ export default function MyBookings() {
     const kw = filter.keyword.toLowerCase();
     const matchesKw =
       !kw ||
-      [b.code, b.bookingCode, b.roomName, b.guestName].some((v) =>
+      [b.code, b.bookingCode, b.roomName, b.roomNumber, b.roomId, b.guestName].some((v) =>
         (v || '').toLowerCase().includes(kw)
       );
     return matchesStatus && matchesKw;
@@ -74,7 +74,7 @@ export default function MyBookings() {
 
   // Mở modal QR VietQR (checkout / thanh toán chuyển khoản)
   const openPaymentQR = async (booking, bankKey = null) => {
-    const bid = booking.id || booking._id;
+    const bid = booking.id || booking._id || booking.bookingId || booking.code || booking.bookingCode;
     const code = booking.code || booking.bookingCode;
     setQrError('');
     setQrLoading(true);
@@ -90,9 +90,9 @@ export default function MyBookings() {
       } catch (e) { /* ignore */ }
     }
 
-    const query = bankKey ? `?bank=${bankKey}` : (selectedBank ? `?bank=${selectedBank}` : '');
     try {
-      const res = await apiCall(`/bookings/${bid}/payment-qr${query}`, 'GET');
+      const bank = (bankKey || selectedBank || '').trim();
+      const res = await getBookingPaymentQr(bid, bank);
       const data = unwrap(res);
       setQrInfo(data);
     } catch (err) {
@@ -147,7 +147,7 @@ export default function MyBookings() {
     if (!window.confirm('Xác nhận bạn đã chuyển khoản thành công? Admin sẽ kiểm tra và cập nhật.')) return;
 
     try {
-      await apiCall(`/bookings/${bid}`, 'PUT', { status: 'paid' });
+      await apiCall(`/bookings/${bid}/status`, 'PATCH', { status: 'paid' });
       showToast('Đã ghi nhận thanh toán! Cảm ơn bạn. Admin sẽ xác nhận sớm.', 'success');
       closeQRModal();
       load(); // refresh list
@@ -211,7 +211,12 @@ export default function MyBookings() {
                       <div className="fw-semibold">{b.code || b.bookingCode}</div>
                       <small className="text-muted-soft">{formatDateTime(b.createdAt)}</small>
                     </td>
-                    <td>{b.roomName}</td>
+                    <td>
+                      <div className="fw-semibold">{b.roomName || 'Phòng không xác định'}</div>
+                      <small className="text-muted-soft">
+                        {b.roomNumber ? `Số phòng: ${b.roomNumber}` : (b.roomId ? `Mã phòng: ${b.roomId}` : 'Chưa có mã phòng')}
+                      </small>
+                    </td>
                     <td>
                       {formatDate(b.checkIn || b.checkInDate)}
                       <br />

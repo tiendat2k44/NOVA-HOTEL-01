@@ -239,7 +239,7 @@ export default function AdminDashboard() {
                 </tr>
               )}
               {latest.map((booking) => {
-                const bookingId = booking.id || booking._id;
+                const bookingId = booking.id || booking._id || booking.bookingId || booking.code || booking.bookingCode;
                 const roomCode = booking.roomCode || booking.roomNumber || booking.room?.code || '—';
                 const status = (booking.status || 'pending').toLowerCase();
 

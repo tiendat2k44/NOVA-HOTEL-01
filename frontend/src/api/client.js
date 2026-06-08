@@ -1,9 +1,13 @@
 import axios from 'axios';
 
+/**
+ * Base URL API backend.
+ * - Dev mặc định: /api (Vite proxy -> http://localhost:8080, không lỗi CORS)
+ * - Override bằng VITE_API_BASE trong frontend/.env nếu cần gọi thẳng 8080
+ */
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
-// If you build for production without reverse proxy, set VITE_API_BASE=http://your-backend:8080/api
-// In dev, Vite proxy in vite.config.js handles /api -> localhost:8080
+export const getApiBaseUrl = () => API_BASE.replace(/\/$/, '');
 
 const STORAGE_KEYS = {
   token: 'nova_hotel_token',
@@ -83,7 +87,10 @@ api.interceptors.request.use(
       }
     }
 
-    console.log(`[Axios API] ${config.method?.toUpperCase()} ${config.url}`, config.data || config.params || '');
+    const base = (config.baseURL || '').replace(/\/$/, '');
+    const path = config.url || '';
+    const fullUrl = path.startsWith('http') ? path : `${base}${path.startsWith('/') ? path : `/${path}`}`;
+    console.log(`[Axios API] ${config.method?.toUpperCase()} ${fullUrl}`, config.data || config.params || '');
     return config;
   },
   (error) => {
@@ -162,6 +169,26 @@ export async function apiCall(url, method = 'GET', data = null) {
   return api(config);
 }
 
+export async function getBookingPaymentQr(bookingId, bankKey = '') {
+  if (!bookingId) throw new Error('Thiếu mã booking để tạo QR.');
+
+  const query = bankKey ? `?bank=${encodeURIComponent(bankKey)}` : '';
+  try {
+    return await apiCall(`/bookings/${bookingId}/payment-qr${query}`, 'GET');
+  } catch (err) {
+    if (err?.status === 401) {
+      throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại rồi thử mở QR.');
+    }
+    if (err?.status === 404) {
+      throw new Error('Không tìm thấy booking hoặc endpoint QR. Hãy restart backend và thử lại.');
+    }
+    if (err?.status >= 500) {
+      throw new Error('Backend lỗi khi tạo QR. Hãy restart backend (port 8080) rồi thử lại.');
+    }
+    throw err;
+  }
+}
+
 export const extractAuthPayload = (response) => {
   const body = unwrap(response) || response;
   const token = body?.token || body?.accessToken || body?.jwt;
@@ -203,7 +230,7 @@ export async function uploadRoomImage(file) {
   formData.append('file', file);
 
   const token = getAuthToken();
-  const uploadBase = import.meta.env.VITE_UPLOAD_BASE || API_BASE;
+  const uploadBase = import.meta.env.VITE_UPLOAD_BASE || getApiBaseUrl();
 
   // Dùng axios global (không phải instance `api`) để tránh default Content-Type: application/json.
   // Browser sẽ tự đặt Content-Type: multipart/form-data; boundary=xxx cho FormData.

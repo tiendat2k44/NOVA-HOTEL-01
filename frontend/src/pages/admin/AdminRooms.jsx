@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import * as XLSX from 'xlsx';
 import { apiCall, unwrap, uploadRoomImage } from '../../api/client';
-import { useToast } from '../../context/ToastContext';
-import { useAuth } from '../../context/AuthContext';
-import { formatCurrency } from '../../utils/format';
-import { getStatusBadgeClass, getStatusLabel, toDisplayRoom } from '../../utils/rooms';
 import Modal from '../../components/Modal';
 import Pagination from '../../components/Pagination';
+import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
+import { formatCurrency } from '../../utils/format';
+import { getStatusBadgeClass, getStatusLabel, toDisplayRoom } from '../../utils/rooms';
 
 const emptyForm = {
   roomId: '',
@@ -50,6 +51,7 @@ export default function AdminRooms() {
 
   const [showModal, setShowModal] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [importingExcel, setImportingExcel] = useState(false);
 
   const load = useCallback(async (page = currentPage, size = pageSize) => {
     try {
@@ -229,17 +231,161 @@ export default function AdminRooms() {
     load(0, newSize);
   };
 
+  const getExcelValue = (row, keys = []) => {
+    for (const key of keys) {
+      if (!key) continue;
+      if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== '') {
+        return String(row[key]).trim();
+      }
+    }
+    return '';
+  };
+
+  const parseExcelRooms = async (file) => {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array' });
+    const firstSheetName = wb.SheetNames?.[0];
+    if (!firstSheetName) throw new Error('File Excel không có sheet nào.');
+
+    const sheet = wb.Sheets[firstSheetName];
+    const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+    if (!rows.length) throw new Error('Sheet Excel đang rỗng.');
+
+    return rows
+      .map((row, idx) => {
+        const code = getExcelValue(row, ['code', 'roomCode', 'roomId', 'roomNumber', 'Mã phòng']);
+        const name = getExcelValue(row, ['name', 'roomName', 'Tên phòng']);
+        if (!code || !name) {
+          return { error: `Dòng ${idx + 2}: thiếu Mã phòng hoặc Tên phòng.` };
+        }
+
+        const priceRaw = getExcelValue(row, ['price', 'basePrice', 'Giá']);
+        const maxGuestsRaw = getExcelValue(row, ['capacity', 'maxGuests', 'Sức chứa']);
+        const floorRaw = getExcelValue(row, ['floor', 'Tầng']);
+        const facilitiesRaw = getExcelValue(row, ['facilities', 'amenities', 'Tiện nghi']);
+        const imagesRaw = getExcelValue(row, ['images', 'Hình ảnh']);
+        const roomType = getExcelValue(row, ['type', 'roomType', 'Loại phòng']) || 'Standard';
+        const status = (getExcelValue(row, ['status', 'Trạng thái']) || 'available').toLowerCase();
+
+        const facilities = facilitiesRaw
+          .split(/[,;|]/)
+          .map((s) => s.trim())
+          .filter(Boolean);
+        const images = imagesRaw
+          .split(/[,;|]/)
+          .map((s) => s.trim())
+          .filter(Boolean);
+
+        const payload = {
+          name,
+          roomId: code,
+          roomNumber: code,
+          roomType,
+          price: { basePrice: Number(priceRaw || 0) },
+          status: status || 'available',
+          facilities,
+          description: getExcelValue(row, ['description', 'Mô tả']),
+          maxGuests: Number(maxGuestsRaw || 2),
+          floor: Number(floorRaw || 0),
+          images,
+        };
+
+        return { payload, code };
+      });
+  };
+
+  const importRoomsFromExcel = async (file) => {
+    if (!file) return;
+    setImportingExcel(true);
+    try {
+      const parsed = await parseExcelRooms(file);
+      const validationErrors = parsed.filter((item) => item.error).map((item) => item.error);
+      if (validationErrors.length > 0) {
+        throw new Error(validationErrors.slice(0, 5).join(' | '));
+      }
+
+      const existingByCode = new Map(
+        rooms
+          .filter((r) => r.code)
+          .map((r) => [String(r.code).trim().toLowerCase(), r])
+      );
+
+      let created = 0;
+      let updated = 0;
+      const failed = [];
+
+      for (const item of parsed) {
+        const key = item.code.trim().toLowerCase();
+        const existing = existingByCode.get(key);
+        try {
+          if (existing?.id) {
+            await apiCall(`/rooms/admin/${existing.id}`, 'PUT', item.payload);
+            updated += 1;
+          } else {
+            await apiCall('/rooms/admin', 'POST', item.payload);
+            created += 1;
+          }
+        } catch (err) {
+          failed.push(`${item.code}: ${err.message || 'Lỗi không xác định'}`);
+        }
+      }
+
+      await load(0, pageSize);
+
+      const summary = [`Tạo mới: ${created}`, `Cập nhật: ${updated}`];
+      if (failed.length > 0) {
+        summary.push(`Lỗi: ${failed.length}`);
+        showToast(summary.join(' | '), 'warning');
+        showToast(`Chi tiết lỗi: ${failed.slice(0, 3).join(' | ')}`, 'danger');
+      } else {
+        showToast(summary.join(' | '), 'success');
+      }
+    } catch (err) {
+      showToast(err.message || 'Nhập Excel thất bại.', 'danger');
+    } finally {
+      setImportingExcel(false);
+    }
+  };
+
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h3 className="h5 mb-0">Quản lý phòng</h3>
-        <button 
-          className="btn-luxury btn-luxury-primary btn-sm" 
-          onClick={() => openModal()}
-        >
-          + Thêm phòng mới
-        </button>
+        <div className="d-flex gap-2 flex-wrap justify-content-end">
+          <input
+            type="file"
+            id="roomsExcelInput"
+            accept=".xlsx,.xls"
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) importRoomsFromExcel(file);
+              e.target.value = '';
+            }}
+            disabled={importingExcel}
+          />
+          <button
+            className="btn btn-outline-dark btn-sm"
+            type="button"
+            disabled={importingExcel}
+            onClick={() => {
+              const inp = document.getElementById('roomsExcelInput');
+              if (inp) inp.click();
+            }}
+          >
+            {importingExcel ? 'Đang nhập Excel...' : 'Nhập từ Excel'}
+          </button>
+          <button
+            className="btn-luxury btn-luxury-primary btn-sm"
+            onClick={() => openModal()}
+          >
+            + Thêm phòng mới
+          </button>
+        </div>
       </div>
+      <p className="text-muted small mb-3">
+        Excel hỗ trợ cột: code/roomId, name, roomType, price, status, capacity, floor, facilities, description, images.
+      </p>
 
       {/* Modal for Add/Edit Form */}
       <Modal 

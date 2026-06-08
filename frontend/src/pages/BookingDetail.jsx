@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { apiCall, unwrap } from '../api/client';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { apiCall, getBookingPaymentQr, unwrap } from '../api/client';
+import Modal from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { exportVietQRInvoice } from '../utils/exportInvoice';
 import { formatCurrency, formatDate, formatDateTime } from '../utils/format';
 import { getRoleLabel } from '../utils/roles';
-import Modal from '../components/Modal';
-import { exportVietQRInvoice } from '../utils/exportInvoice';
 
 const statusLabel = {
   pending: 'Chờ xác nhận',
@@ -75,9 +75,9 @@ export default function BookingDetail() {
     setQrInfo(null);
     await loadBanks();
 
-    const q = bankKey ? `?bank=${bankKey}` : (selectedBank ? `?bank=${selectedBank}` : '');
     try {
-      const res = await apiCall(`/bookings/${id}/payment-qr${q}`, 'GET');
+      const bank = (bankKey || selectedBank || '').trim();
+      const res = await getBookingPaymentQr(id, bank);
       setQrInfo(unwrap(res));
     } catch (e) {
       showToast(e.message || 'Không tải được QR', 'danger');
@@ -99,7 +99,7 @@ export default function BookingDetail() {
   const markAsPaid = async () => {
     if (!window.confirm('Xác nhận bạn đã chuyển khoản thành công?')) return;
     try {
-      await apiCall(`/bookings/${id}`, 'PUT', { status: 'paid' });
+      await apiCall(`/bookings/${id}/status`, 'PATCH', { status: 'paid' });
       showToast('Đã ghi nhận thanh toán. Admin sẽ xác nhận sớm!', 'success');
       closeQR();
       loadBooking();
@@ -121,7 +121,7 @@ export default function BookingDetail() {
 
   const updateStatus = async (newStatus) => {
     try {
-      await apiCall(`/bookings/${id}`, 'PUT', { status: newStatus });
+      await apiCall(`/bookings/${id}/status`, 'PATCH', { status: newStatus });
       showToast('Cập nhật trạng thái thành công.', 'success');
       loadBooking();
     } catch (e) {
