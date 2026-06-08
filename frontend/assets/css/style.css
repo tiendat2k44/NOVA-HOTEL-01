@@ -24,10 +24,13 @@ html {
 }
 
 body {
-  font-family: 'Source Sans 3', sans-serif;
+  font-family: 'Source Sans 3', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   color: var(--nova-ink);
   font-size: 1rem;
   line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   background:
     radial-gradient(circle at top left, rgba(212, 175, 55, 0.10), transparent 28%),
     radial-gradient(circle at bottom right, rgba(26, 26, 26, 0.05), transparent 32%),
@@ -39,7 +42,7 @@ h1, h2, h3, h4, h5, h6,
 .hero-title,
 .section-title,
 .brand-mark {
-  font-family: 'Fraunces', serif;
+  font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
   letter-spacing: 0.01em;
 }
 
@@ -777,6 +780,29 @@ footer .text-muted-soft {
   .sidebar-admin > div:last-child {
     display: none;
   }
+}
+
+/* === Admin action buttons: force text + icon perfectly centered (Chi tiết, Sửa, etc.) === */
+.table-luxury td .btn,
+.table-luxury td .btn-sm,
+.admin-action-btn,
+.content-card .btn-sm {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  vertical-align: middle;
+  line-height: 1;
+  padding-top: 0.28rem;
+  padding-bottom: 0.28rem;
+  font-size: 0.8rem;
+}
+
+/* Tighter padding for outline detail buttons like "Chi tiết" */
+.table-luxury td .btn.btn-outline-dark,
+.table-luxury td .btn-outline-dark.btn-sm {
+  padding-left: 0.55rem;
+  padding-right: 0.55rem;
 }
 
 .gradient-hero-card {

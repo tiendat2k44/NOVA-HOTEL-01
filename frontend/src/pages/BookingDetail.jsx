@@ -308,9 +308,9 @@ export default function BookingDetail() {
             </div>
 
             {banks.length > 0 && (
-              <div className="my-3">
-                <label className="form-label small">Chọn ngân hàng:</label>
-                <select className="form-select" value={selectedBank} onChange={e => changeBank(e.target.value)}>
+              <div className="my-3 text-center">
+                <label className="form-label small d-block">Chọn ngân hàng:</label>
+                <select className="form-select mx-auto" style={{ maxWidth: '260px' }} value={selectedBank} onChange={e => changeBank(e.target.value)}>
                   {banks.map(bk => (
                     <option key={bk.key} value={bk.key}>{bk.name} ({bk.bin})</option>
                   ))}
@@ -318,12 +318,17 @@ export default function BookingDetail() {
               </div>
             )}
 
-            <div className="bg-light p-3 rounded small mt-2">
+            <div className="bg-light p-3 rounded small mt-2 text-center">
               <div><strong>Ngân hàng:</strong> {qrInfo.bankName}</div>
-              <div><strong>Số TK:</strong> {qrInfo.accountNo} <button className="btn btn-sm btn-link p-0" onClick={() => navigator.clipboard.writeText(qrInfo.accountNo)}>copy</button></div>
-              <div><strong>Chủ TK:</strong> {qrInfo.accountName}</div>
-              <div><strong>Số tiền:</strong> <span className="fw-bold text-danger">{formatCurrency(qrInfo.amount)}</span></div>
-              <div><strong>Nội dung CK:</strong> {qrInfo.description} <button className="btn btn-sm btn-link p-0" onClick={() => navigator.clipboard.writeText(qrInfo.description)}>copy</button></div>
+              <div className="mt-1"><strong>Số TK:</strong> {qrInfo.accountNo} <button className="btn btn-sm btn-link p-0" onClick={() => navigator.clipboard.writeText(qrInfo.accountNo)}>copy</button></div>
+              <div className="mt-1"><strong>Chủ TK:</strong> {qrInfo.accountName}</div>
+              <div className="mt-1 fw-bold text-danger"><strong>Số tiền cần chuyển:</strong> {formatCurrency(qrInfo.amount)}</div>
+              {qrInfo.roomAmount > 0 && qrInfo.surchargeAmount > 0 && (
+                <div className="small text-muted mt-1">
+                  (Tiền phòng: {formatCurrency(qrInfo.roomAmount)} + Phụ phí QR: {formatCurrency(qrInfo.surchargeAmount)})
+                </div>
+              )}
+              <div className="mt-1"><strong>Nội dung CK:</strong> {qrInfo.description} <button className="btn btn-sm btn-link p-0" onClick={() => navigator.clipboard.writeText(qrInfo.description)}>copy</button></div>
             </div>
 
             <div className="alert alert-info small mt-3">{qrInfo.instructions}</div>

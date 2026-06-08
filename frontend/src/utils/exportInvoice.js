@@ -418,47 +418,43 @@ export async function exportVietQRInvoice(booking, qrInfo) {
             <strong>Số tiền bằng chữ:</strong> ${amountInWords(grandTotal)}
           </div>
 
-          <!-- VietQR Payment + QR Code for transfer -->
-          <div class="payment-section">
-            <h4 style="margin-bottom:12px;">
+          <!-- VietQR Payment + QR Code for transfer (centered) -->
+          <div class="payment-section" style="text-align:center;">
+            <h4 style="margin-bottom:12px; text-align:center;">
               THÔNG TIN THANH TOÁN VIETQR — QUÉT MÃ ĐỂ CHUYỂN KHOẢN
             </h4>
 
-            <div style="display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;">
-              <!-- QR Image (embedded base64 for print reliability) -->
-              <div style="flex-shrink:0; text-align:center; background:#fff; padding:6px; border:2px solid #1a1a1a; border-radius:8px;">
-                ${qrImageSrc ? `<img src="${qrImageSrc}" alt="Mã QR VietQR thanh toán" style="width:148px; height:148px; display:block; border-radius:4px;" />` : ''}
-                <div style="margin-top:4px; font-size:10.5px; font-weight:700; color:#1a1a1a; letter-spacing:0.3px;">QUÉT QR</div>
-              </div>
+            <!-- QR Image centered -->
+            <div style="display:inline-block; text-align:center; background:#fff; padding:6px; border:2px solid #1a1a1a; border-radius:8px; margin-bottom:12px;">
+              ${qrImageSrc ? `<img src="${qrImageSrc}" alt="Mã QR VietQR thanh toán" style="width:148px; height:148px; display:block; border-radius:4px;" />` : ''}
+              <div style="margin-top:4px; font-size:10.5px; font-weight:700; color:#1a1a1a; letter-spacing:0.3px;">QUÉT QR</div>
+            </div>
 
-              <!-- Bank details -->
-              <div style="flex:1; min-width:240px;">
-                <div class="payment-details">
-                  <div>
-                    <div class="label">Ngân hàng</div>
-                    <div class="value">${qrInfo.bankName || ''} ${qrInfo.bankBin ? '(' + qrInfo.bankBin + ')' : ''}</div>
-                  </div>
-                  <div>
-                    <div class="label">Số tài khoản</div>
-                    <div class="value">${qrInfo.accountNo}</div>
-                  </div>
-                  <div>
-                    <div class="label">Chủ tài khoản</div>
-                    <div class="value">${qrInfo.accountName}</div>
-                  </div>
-                  <div>
-                    <div class="label">Số tiền cần chuyển</div>
-                    <div class="value" style="color:#c8102e; font-size:15px; font-weight:800;">${formatCurrency(qrInfo.amount || grandTotal)}</div>
-                  </div>
-                  <div class="full-width">
-                    <div class="label">Nội dung chuyển khoản (BẮT BUỘC)</div>
-                    <div class="description">${qrInfo.description}</div>
-                  </div>
-                </div>
+            <!-- Bank details centered below QR -->
+            <div style="max-width:320px; margin:0 auto; text-align:left; background:#f9f9f9; padding:10px 14px; border-radius:6px; border:1px solid #ddd;">
+              <div style="margin-bottom:6px;">
+                <span style="font-weight:600; color:#555;">Ngân hàng:</span> 
+                <span style="font-weight:700;">${qrInfo.bankName || ''} ${qrInfo.bankBin ? '(' + qrInfo.bankBin + ')' : ''}</span>
+              </div>
+              <div style="margin-bottom:6px;">
+                <span style="font-weight:600; color:#555;">Số TK:</span> 
+                <span style="font-weight:700;">${qrInfo.accountNo}</span>
+              </div>
+              <div style="margin-bottom:6px;">
+                <span style="font-weight:600; color:#555;">Chủ TK:</span> 
+                <span style="font-weight:700;">${qrInfo.accountName}</span>
+              </div>
+              <div style="margin-bottom:6px;">
+                <span style="font-weight:600; color:#555;">Số tiền cần chuyển:</span> 
+                <span style="color:#c8102e; font-size:15px; font-weight:800;">${formatCurrency(qrInfo.amount || grandTotal)}</span>
+              </div>
+              <div>
+                <span style="font-weight:600; color:#555;">Nội dung CK (BẮT BUỘC):</span><br>
+                <span style="font-weight:700; word-break:break-all;">${qrInfo.description}</span>
               </div>
             </div>
 
-            <div style="margin-top:10px; font-size:12.5px; color:#166534; font-weight:600; background:#f0fdf4; padding:6px 10px; border-radius:4px;">
+            <div style="margin-top:10px; font-size:12.5px; color:#166534; font-weight:600; background:#f0fdf4; padding:6px 10px; border-radius:4px; text-align:center;">
               Quét mã QR VietQR bằng ứng dụng ngân hàng (Mobile Banking) để chuyển khoản nhanh.<br>
               <strong>Nội dung CK phải chính xác</strong> để hệ thống tự động đối chiếu. Giữ hóa đơn này làm biên nhận.
             </div>
@@ -490,7 +486,7 @@ export async function exportVietQRInvoice(booking, qrInfo) {
       </div>
 
       <button onclick="window.print()" class="print-btn">
-        🖨️ In hóa đơn / Lưu thành PDF
+        🖨️ In hoặc lưu thành PDF (có đầy đủ thông tin ngân hàng)
       </button>
 
       <script>

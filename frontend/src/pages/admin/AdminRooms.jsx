@@ -54,12 +54,29 @@ export default function AdminRooms() {
   const load = useCallback(async (page = currentPage, size = pageSize) => {
     try {
       const res = await apiCall(`/rooms?page=${page}&size=${size}`, 'GET');
-      const pageData = unwrap(res); // the Spring Page object
-      const list = (pageData?.content || []).map(toDisplayRoom);
-      setRooms(list);
-      setTotalItems(pageData?.totalElements || 0);
-      setTotalPages(pageData?.totalPages || 0);
-      setCurrentPage(pageData?.number || 0);
+      const unwrapped = unwrap(res);
+
+      // Hỗ trợ cả 2 kiểu response: mảng trực tiếp hoặc {content, totalElements...}
+      let listRaw = [];
+      let totalElements = 0;
+      let totalPagesCalc = 0;
+      let currentPageNum = page;
+
+      if (Array.isArray(unwrapped)) {
+        listRaw = unwrapped;
+        totalElements = unwrapped.length;
+        totalPagesCalc = totalElements > 0 ? 1 : 0;
+      } else if (unwrapped && typeof unwrapped === 'object') {
+        listRaw = Array.isArray(unwrapped.content) ? unwrapped.content : [];
+        totalElements = unwrapped.totalElements ?? listRaw.length;
+        totalPagesCalc = unwrapped.totalPages ?? (totalElements > 0 ? 1 : 0);
+        currentPageNum = unwrapped.number ?? page;
+      }
+
+      setRooms(listRaw.map(toDisplayRoom));
+      setTotalItems(totalElements);
+      setTotalPages(totalPagesCalc);
+      setCurrentPage(currentPageNum);
     } catch (err) {
       showToast(err.message || 'Không tải được phòng.', 'danger');
       setRooms([]);

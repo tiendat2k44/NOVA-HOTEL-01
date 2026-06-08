@@ -59,11 +59,30 @@ const api = axios.create({
 // Request interceptor: add auth token + debug logging (you will now SEE the calls in console)
 api.interceptors.request.use(
   (config) => {
-    const token = getAuthToken();
-    if (token) {
-      config.headers = config.headers || {};
-      config.headers.Authorization = `Bearer ${token}`;
+    const url = config.url || '';
+
+    // Do NOT attach Authorization token for public auth endpoints.
+    // This prevents stale/expired tokens from causing 401 on /auth/login, /auth/register, /auth/google, etc.
+    const isPublicAuthEndpoint =
+      url.startsWith('/auth/login') ||
+      url.startsWith('/auth/register') ||
+      url.startsWith('/auth/google') ||
+      url.startsWith('/auth/forgot-password') ||
+      url.startsWith('/auth/reset-password');
+
+    if (!isPublicAuthEndpoint) {
+      const token = getAuthToken();
+      if (token) {
+        config.headers = config.headers || {};
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } else {
+      // Ensure we never send a stale token to auth endpoints (defensive)
+      if (config.headers && config.headers.Authorization) {
+        delete config.headers.Authorization;
+      }
     }
+
     console.log(`[Axios API] ${config.method?.toUpperCase()} ${config.url}`, config.data || config.params || '');
     return config;
   },
@@ -93,6 +112,13 @@ api.interceptors.response.use(
 
     console.error('[Axios API] Error', { url: error.config?.url, status, message, payload });
 
+    // Global handling for auth errors: clear bad token so user has to log in again
+    if (status === 401) {
+      try {
+        clearAuthData();
+      } catch (e) { /* ignore */ }
+    }
+
     const err = new Error(typeof message === 'string' ? message : 'Yêu cầu thất bại');
     err.status = status;
     err.payload = payload;
@@ -107,6 +133,11 @@ export const unwrap = (payload) => {
   return payload;
 };
 
+/**
+ * Lấy mảng dữ liệu từ response, hỗ trợ cả 2 kiểu backend hay dùng:
+ * - data: [...] (list thẳng)
+ * - data: { content: [...] } (Spring Page)
+ */
 export const unwrapList = (payload) => {
   const data = unwrap(payload);
   if (Array.isArray(data)) return data;
@@ -156,24 +187,47 @@ export const extractAuthPayload = (response) => {
 
 /**
  * Upload ảnh phòng (dành cho admin). Sử dụng FormData.
- * Trả về payload (đã qua interceptor -> body của ApiResponse)
- * Sử dụng cùng với unwrap() ở phía gọi: const body = unwrap(res) || res; const url = body?.url || body?.data?.url;
+ *
+ * QUAN TRỌNG: Không dùng instance `api` (có default Content-Type: application/json).
+ * Phải dùng axios trực tiếp để browser tự đặt Content-Type: multipart/form-data; boundary=...
+ * Nếu dùng `api`, header application/json sẽ không bị ghi đè đúng cách và controller
+ * backend (consumes = MULTIPART_FORM_DATA) sẽ không khớp → 500 NoResourceFoundException.
+ *
+ * Trả về: body của ApiResponse (đã unwrap bởi interceptor response của `api` sẽ không chạy,
+ * nên trả thẳng response.data từ axios raw).
  */
 export async function uploadRoomImage(file) {
   if (!file) throw new Error('Không có file để upload');
+
   const formData = new FormData();
   formData.append('file', file);
+
   const token = getAuthToken();
-  
-  const requestConfig = {
+  const uploadBase = import.meta.env.VITE_UPLOAD_BASE || API_BASE;
+
+  // Dùng axios global (không phải instance `api`) để tránh default Content-Type: application/json.
+  // Browser sẽ tự đặt Content-Type: multipart/form-data; boundary=xxx cho FormData.
+  const response = await axios.post(`${uploadBase}/uploads/rooms`, formData, {
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      // Setting Content-Type to undefined removes the global default 'application/json'
-      // This allows axios + browser to automatically set the correct 
-      // 'multipart/form-data; boundary=----WebKitFormBoundary...' for Spring's MultipartFile
-      'Content-Type': undefined
+      // Không đặt Content-Type ở đây — để browser tự set với boundary đúng
+    },
+  });
+
+  const payload = response.data;
+  const rawUrl = payload?.data?.url || payload?.url;
+
+  if (typeof rawUrl === 'string' && rawUrl.length > 0) {
+    const baseUrl = new URL(uploadBase, window.location.origin);
+    const normalizedUrl = new URL(rawUrl, baseUrl).toString();
+
+    if (payload?.data && typeof payload.data === 'object') {
+      payload.data.url = normalizedUrl;
+    } else if (payload && typeof payload === 'object') {
+      payload.url = normalizedUrl;
     }
-  };
-  
-  return api.post('/uploads/rooms', formData, requestConfig);
+  }
+
+  // axios global không qua interceptor của `api`, nên trả response.data trực tiếp
+  return payload;
 }

@@ -54,15 +54,38 @@ export default function AdminUsers() {
   const load = useCallback(async (page = currentPage, size = pageSize) => {
     try {
       const res = await apiCall(`/users?page=${page}&size=${size}`, 'GET');
-      const pageData = unwrap(res);
-      const list = (pageData?.content || []).map(toDisplayUser);
-      setUsers(list);
-      setTotalItems(pageData?.totalElements || 0);
-      setTotalPages(pageData?.totalPages || 0);
-      setCurrentPage(pageData?.number || 0);
+      const unwrapped = unwrap(res);
+
+      // Backend có thể trả về 2 kiểu:
+      // 1. ApiResponse.data = Page object { content: [...], totalElements, totalPages, number }
+      // 2. ApiResponse.data = mảng trực tiếp [user1, user2, ...]  (như log bạn thấy)
+      let listRaw = [];
+      let totalElements = 0;
+      let totalPagesCalc = 0;
+      let currentPageNum = page;
+
+      if (Array.isArray(unwrapped)) {
+        // Trường hợp backend trả list thẳng trong data
+        listRaw = unwrapped;
+        totalElements = unwrapped.length;
+        totalPagesCalc = totalElements > 0 ? 1 : 0;
+      } else if (unwrapped && typeof unwrapped === 'object') {
+        // Trường hợp chuẩn Spring Page
+        listRaw = Array.isArray(unwrapped.content) ? unwrapped.content : [];
+        totalElements = unwrapped.totalElements ?? listRaw.length;
+        totalPagesCalc = unwrapped.totalPages ?? (totalElements > 0 ? 1 : 0);
+        currentPageNum = unwrapped.number ?? page;
+      }
+
+      setUsers(listRaw.map(toDisplayUser));
+      setTotalItems(totalElements);
+      setTotalPages(totalPagesCalc);
+      setCurrentPage(currentPageNum);
     } catch (err) {
       showToast(err.message || 'Không tải users.', 'danger');
       setUsers([]);
+      setTotalItems(0);
+      setTotalPages(0);
     }
   }, [showToast, currentPage, pageSize]);
 

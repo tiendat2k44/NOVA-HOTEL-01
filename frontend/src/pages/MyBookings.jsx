@@ -297,12 +297,13 @@ export default function MyBookings() {
               />
             </div>
 
-            {/* Chọn ngân hàng động */}
+            {/* Chọn ngân hàng động - centered */}
             {banks.length > 0 && (
-              <div className="mb-3">
-                <label className="form-label small text-muted-soft mb-1">Chọn ngân hàng nhận tiền:</label>
+              <div className="mb-3 text-center">
+                <label className="form-label small text-muted-soft mb-1 d-block">Chọn ngân hàng nhận tiền:</label>
                 <select
-                  className="form-select form-select-sm"
+                  className="form-select form-select-sm mx-auto"
+                  style={{ maxWidth: '280px' }}
                   value={selectedBank || qrInfo.selectedBankKey || ''}
                   onChange={(e) => changeBank(e.target.value)}
                 >
@@ -313,36 +314,36 @@ export default function MyBookings() {
               </div>
             )}
 
-            <div className="content-card p-3 mb-3" style={{ fontSize: 14 }}>
-              <div className="row g-2">
-                <div className="col-5 text-muted-soft">Ngân hàng</div>
-                <div className="col-7 fw-semibold">{qrInfo.bankName} ({qrInfo.bankBin})</div>
+            <div className="content-card p-3 mb-3 text-center" style={{ fontSize: 14 }}>
+              <div><strong>Ngân hàng:</strong> {qrInfo.bankName} ({qrInfo.bankBin})</div>
 
-                <div className="col-5 text-muted-soft">Số tài khoản</div>
-                <div className="col-7 fw-semibold d-flex align-items-center gap-2">
-                  {qrInfo.accountNo}
-                  <button type="button" className="btn btn-sm btn-outline-secondary py-0 px-1" onClick={() => copyToClipboard(qrInfo.accountNo, 'Số TK')} style={{ fontSize: 11 }}>Copy</button>
+              <div className="mt-1">
+                <strong>Số TK:</strong> {qrInfo.accountNo}
+                <button type="button" className="btn btn-sm btn-outline-secondary py-0 px-1 ms-1" onClick={() => copyToClipboard(qrInfo.accountNo, 'Số TK')} style={{ fontSize: 11 }}>Copy</button>
+              </div>
+
+              <div className="mt-1"><strong>Chủ TK:</strong> {qrInfo.accountName}</div>
+
+              <div className="mt-1 fw-bold text-danger">
+                <strong>Số tiền cần chuyển:</strong> {formatCurrency(qrInfo.amount)}
+              </div>
+              {qrInfo.roomAmount > 0 && qrInfo.surchargeAmount > 0 && (
+                <div className="small text-muted-soft mt-1">
+                  (Tiền phòng: {formatCurrency(qrInfo.roomAmount)} + Phụ phí QR: {formatCurrency(qrInfo.surchargeAmount)})
                 </div>
+              )}
 
-                <div className="col-5 text-muted-soft">Chủ tài khoản</div>
-                <div className="col-7 fw-semibold">{qrInfo.accountName}</div>
-
-                <div className="col-5 text-muted-soft">Số tiền</div>
-                <div className="col-7 fw-bold text-danger">{formatCurrency(qrInfo.amount)}</div>
-
-                <div className="col-5 text-muted-soft">Nội dung CK</div>
-                <div className="col-7 fw-semibold d-flex align-items-center gap-2">
-                  <span className="text-break">{qrInfo.description}</span>
-                  <button type="button" className="btn btn-sm btn-outline-secondary py-0 px-1 flex-shrink-0" onClick={() => copyToClipboard(qrInfo.description, 'Nội dung CK')} style={{ fontSize: 11 }}>Copy</button>
-                </div>
+              <div className="mt-1">
+                <strong>Nội dung CK:</strong> <span className="text-break">{qrInfo.description}</span>
+                <button type="button" className="btn btn-sm btn-outline-secondary py-0 px-1 ms-1" onClick={() => copyToClipboard(qrInfo.description, 'Nội dung CK')} style={{ fontSize: 11 }}>Copy</button>
               </div>
             </div>
 
-            <div className="small text-muted-soft mb-2">
+            <div className="small text-muted-soft mb-2 text-center">
               <strong>Hướng dẫn:</strong> {qrInfo.instructions}
             </div>
 
-            <div className="alert alert-info py-2 small mb-0">
+            <div className="alert alert-info py-2 small mb-0 text-center">
               Sau khi chuyển khoản thành công, vui lòng giữ lại biên lai. Admin sẽ cập nhật trạng thái đơn trong thời gian sớm nhất (thường 5-30 phút).
             </div>
 

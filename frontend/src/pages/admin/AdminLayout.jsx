@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getRoleLabel } from '../../utils/roles';
 
@@ -9,6 +9,37 @@ export default function AdminLayout() {
     `nav-link d-flex align-items-center gap-2 ${isActive ? 'active' : ''}`;
 
   const roleLabel = getRoleLabel(user?.role);
+  const location = useLocation();
+
+  // Simple breadcrumb + title map for admin
+  const routeMeta = {
+    '/admin': { title: 'Dashboard', crumbs: ['Admin', 'Dashboard'] },
+    '/admin/bookings': { title: 'Quản lý Đặt phòng', crumbs: ['Admin', 'Đặt phòng'] },
+    '/admin/rooms': { title: 'Quản lý Phòng', crumbs: ['Admin', 'Phòng'] },
+    '/admin/users': { title: 'Quản lý Người dùng', crumbs: ['Admin', 'Người dùng'] },
+    '/admin/revenue': { title: 'Báo cáo Doanh thu', crumbs: ['Admin', 'Doanh thu'] },
+  };
+
+  // Support dynamic paths like /admin/bookings/:id
+  const getMeta = (pathname) => {
+    if (routeMeta[pathname]) return routeMeta[pathname];
+    if (pathname.startsWith('/admin/bookings/')) {
+      return { title: 'Chi tiết Đặt phòng', crumbs: ['Admin', 'Đặt phòng', 'Chi tiết'] };
+    }
+    // fallback
+    const segs = pathname.split('/').filter(Boolean);
+    const last = segs[segs.length - 1] || 'Admin';
+    return { title: last.charAt(0).toUpperCase() + last.slice(1), crumbs: ['Admin', last] };
+  };
+
+  const meta = getMeta(location.pathname);
+  const pageTitle = meta.title;
+  const breadcrumb = meta.crumbs.map((c, i) => (
+    <span key={i}>
+      {i > 0 && <span className="mx-1">/</span>}
+      <span className={i === meta.crumbs.length - 1 ? 'text-dark fw-medium' : ''}>{c}</span>
+    </span>
+  ));
 
   const getInitials = (str) => {
     if (!str) return '?';
@@ -190,6 +221,42 @@ export default function AdminLayout() {
       {/* Main content area */}
       <div className="flex-grow-1 p-3 p-md-4" style={{ background: 'var(--nova-bg)', minWidth: 0 }}>
         <div className="container-fluid">
+          {/* Admin top header: Breadcrumb + Search + important actions */}
+          <div className="admin-page-header mb-3 pb-2" style={{
+            borderBottom: '1px solid rgba(26,26,26,0.08)',
+          }}>
+            <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+              <div>
+                <nav aria-label="breadcrumb" className="small text-muted-soft mb-1" style={{ fontSize: '0.78rem' }}>
+                  {breadcrumb}
+                </nav>
+                <h4 className="mb-0 fw-semibold" style={{ letterSpacing: '-0.3px', fontSize: '1.25rem' }}>
+                  {pageTitle}
+                </h4>
+              </div>
+
+              <div className="d-flex align-items-center gap-2 flex-wrap" style={{ minWidth: 240 }}>
+                {/* Prominent search (pages can still have their own filters) */}
+                <div className="input-group input-group-sm" style={{ maxWidth: 280 }}>
+                  <span className="input-group-text bg-white border-end-0">
+                    <i className="bi bi-search" />
+                  </span>
+                  <input
+                    type="text"
+                    className="form-control border-start-0"
+                    placeholder="Tìm kiếm (booking, phòng, khách...)"
+                    aria-label="Tìm kiếm admin"
+                  />
+                </div>
+
+                {/* Quick important actions */}
+                <a href="/admin/bookings" className="btn btn-sm btn-outline-dark d-none d-md-inline-flex align-items-center gap-1">
+                  <i className="bi bi-calendar-check" /> Đặt phòng
+                </a>
+              </div>
+            </div>
+          </div>
+
           <Outlet />
         </div>
       </div>
